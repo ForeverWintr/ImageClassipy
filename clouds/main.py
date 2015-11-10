@@ -16,8 +16,11 @@ def main(argv):
 
     sim = genetics.Simulation(1000, images)
 
+    print("Simulating.")
     sim.simulate()
 
+    sim.summarize()
+    print "Done"
     pass
 
 

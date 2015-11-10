@@ -4,6 +4,15 @@
 # Wing IDE project file                                          #
 ##################################################################
 [project attributes]
+console.toolbox = [{'autosave': False,
+                    'id': 'cmd-01XFEz9mxUzWeOCE',
+                    'io_encoding': None,
+                    'key_binding': None,
+                    'line_mode': True,
+                    'loc': u'/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/obj/classifier.py',
+                    'pseudo_tty': False,
+                    'raise_panel': True,
+                    'title': None}]
 proj.directory-list = [{'dirloc': loc('clouds'),
                         'excludes': (),
                         'filter': u'*',

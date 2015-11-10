@@ -9,7 +9,10 @@ we might mess up timing
 
 import random
 import sys
+from collections import defaultdict
 #import multiprocessing
+
+import numpy as np
 
 from clouds.obj import classifier
 from clouds.util import util
@@ -19,11 +22,22 @@ MAX_TRAIN_S = 60 * 60 * 2
 
 class Simulation(object):
 
-    def __init__(self, subjectCount, images=[]):
+    def __init__(self, subjectCount, images={}):
+        self.subjects = []
         self.images = images
 
+        #partition by classification type
+        self.statuses = defaultdict(dict)
+        for k, v in images.iteritems():
+            self.statuses[v][k] = v
+
+        self.setUp(subjectCount)
+
+    def setUp(self, subjectCount):
+        """
+        Create subjects
+        """
         print("Creating {} Test Subjects".format(subjectCount))
-        self.subjects = []
         for i in range(subjectCount):
             imgSize = random.randint(5, 200)
 
@@ -35,7 +49,14 @@ class Simulation(object):
                 netSpec=netspec,
             )
 
+            ### TESTING XXXX
+            #s = classifier.Classifier(
+                #imageSize=(20, 20),
+                #netSpec=[1],
+            #)
+
             self.subjects.append(Subject(s))
+
 
     def simulate(self, chunk_size=10):
         """
@@ -43,21 +64,32 @@ class Simulation(object):
         Train and evaluate each subject
         """
         #randomize image order
-        random.shuffle(self.images)
+        keyOrder = self.images.keys()
+        random.shuffle(keyOrder)
 
         for s in self.subjects:
             #pass in a chunk of randomly selected images, then evaluate runtime
-            for images in util.grouper(self.images, chunk_size):
-                s.train(images)
+            for keys in util.grouper(keyOrder, chunk_size):
+                s.train(keys, [self.images[k] for k in keys])
 
                 #if it takes too long to train this network, it dies.
                 if s.runtimes[-1] > MAX_TRAIN_S:
                     continue
 
             #now evaluate fitness after training.
+            #choose 5 of each status randomly to evaluate
+            evaluateKeys = [x for st in self.statuses.keys() for
+                            x in random.sample(self.statuses[st], 5)]
+            s.evaluateFitness(evaluateKeys, [self.images[k] for k in evaluateKeys])
 
-            pass
 
+    def summarize(self):
+        """
+        Print a results summary.
+        """
+        print("Classifier fitness:")
+        for c in sorted(self.subjects, key=lambda s: s.fitness):
+            print(c.fitness)
 
 
 
@@ -69,8 +101,10 @@ class Subject(object):
         """
         self.classifier = classifier
         self.runtimes = []
+        self.errors = []
         self.imagesTrainedOn = 0
 
+        self.successPercentage = None
         self.fitness = 0
 
         #set to false if this classifier is rejected (e.g., it has an error
@@ -81,17 +115,30 @@ class Subject(object):
         """
         Train our classifier by feeding it images and statuses.
         """
-        self.classifier.train(images, statuses)
-        self.imagesTrainedOn += len(images)
 
         try:
-            self.runtimes.append(self.classifier.trainTime)
+            self.classifier.train(images, statuses)
+            self.errors.append(self.classifier.error)
         except Exception:
             self.isAlive = False
-            self.runtimes.append[sys.maxint]
+            self.runtimes.append(sys.maxint)
+        else:
+            self.imagesTrainedOn += len(images)
+            self.runtimes.append(self.classifier.trainTime)
 
     def evaluateFitness(self, images, statuses):
         """
-        Calculate the performance of our classifier.
+        Calculate the performance of our classifier. Test it against the
+        images and statuses given.
         """
+        correct = [self.classifier.classify(i)[0] == s for i, s in zip(images, statuses)]
+
+        self.successPercentage = np.mean(correct) * 100
+        self.runtimes.append(self.classifier.avgClassifyTime)
+
+        #TODO: incorporate runtimes
+        self.fitness = self.successPercentage
+
+
+
 

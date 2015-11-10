@@ -57,6 +57,8 @@ class Classifier(object):
         imArray = imArray.reshape(1, imArray.shape[0])
         guess = self.net.sim(imArray)[0][0]
 
+        print "Guess is", guess
+
         possibleStatuses = HealthStatus._value2member_map_
 
         closestStatus = min(
@@ -75,7 +77,7 @@ class Classifier(object):
         try:
             image = PIL.Image.open(imagePath)
         except IOError as e:
-            print("Trying to open by converting to png")
+            #print("Trying to open by converting to png")
             png = os.path.splitext(imagePath)[0] + '.png'
             wand.image.Image(filename=imagePath).convert('PNG').save(filename=png)
             image = PIL.Image.open(png)
