@@ -30,6 +30,8 @@ class Classifier(object):
         self.trainTime = None
         self.error = None
 
+    def __repr__(self):
+        return "<Classifier net {}>".format([self.net.ci]+self.netSpec)
 
     def train(self, images, statuses):
         inputArray = np.array([self._loadToArray(i) for i in images])
@@ -88,7 +90,7 @@ class Classifier(object):
         image.thumbnail(newSize)
 
         #greyscale
-        image = image.convert('F')
+        image = image.convert('L')
 
         # neurolab seems to expect 1d input, so rescale the images in the
         # input array as linear (the network does't know about shape anyway)

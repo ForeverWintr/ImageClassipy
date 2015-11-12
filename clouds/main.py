@@ -7,6 +7,8 @@ from clouds.util import farmglue
 # str and repr for classifiers
 # Pickle a simulation/classifiers
 # implement logging
+# subjects are processes
+# Test the train process
 
 FARMDIR = r'/Users/tomrutherford/Documents/Hervalense'
 def main(argv):
@@ -14,7 +16,7 @@ def main(argv):
     farmDir = FARMDIR
     images = farmglue.imagesAndStatuses(farmDir)
 
-    sim = genetics.Simulation(1000, images)
+    sim = genetics.Simulation(1, images)
 
     print("Simulating.")
     sim.simulate()

@@ -1,11 +1,14 @@
 import os
 import unittest
 import sys
+import tempfile
+import shutil
 
 import mock
 import numpy as np
+import PIL
 
-from clouds.constants import HealthStatus
+from clouds.util.constants import HealthStatus
 from clouds.obj import classifier
 
 
@@ -13,6 +16,8 @@ class testTrainClassifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.workspace = tempfile.mkdtemp(prefix="testClassifier_")
+
         #find test images
         tiffs = [
             '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-05-23_RE_75328/rgb/rgb.tif',
@@ -39,6 +44,39 @@ class testTrainClassifier(unittest.TestCase):
             HealthStatus.GOOD,
         ]
 
+        #create test xor images
+        xorIn = [
+            ((255, 255, 255, 255), HealthStatus.GOOD),
+            ((255, 255, 0, 0), HealthStatus.CLOUDY),
+            ((0, 0, 0, 0), HealthStatus.GOOD),
+            ((0, 0, 255, 255), HealthStatus.CLOUDY),
+        ]
+        cls.xorImages = []
+        for ar, expected in xorIn:
+            npar = np.array(ar, dtype=np.uint8).reshape(2, 2)
+
+            image = PIL.Image.fromarray(npar)
+            path = tempfile.mktemp(suffix=".png", prefix='xor_', dir=cls.workspace)
+            image.save(path)
+            cls.xorImages.append((path, expected))
+
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.workspace)
+
+
+    def testXOR(self):
+        """
+        Test that classifier can solve the xor problem
+        """
+        c = classifier.Classifier(imageSize=(2, 2), netSpec=[4, 1], epochsPerImage=500)
+
+        c.train(*zip(*self.xorImages))
+
+        for image, expected in self.xorImages:
+            self.assertEqual(c.classify(image)[0], expected)
+        pass
 
     def testTrain(self):
         """
@@ -54,6 +92,7 @@ class testTrainClassifier(unittest.TestCase):
 
         result = c.train(self.testImages, self.statuses)
         print result
+
 
     def testClassify(self):
         """

@@ -10,7 +10,7 @@ we might mess up timing
 import random
 import sys
 from collections import defaultdict
-#import multiprocessing
+import multiprocessing
 
 import numpy as np
 
@@ -26,11 +26,6 @@ class Simulation(object):
         self.subjects = []
         self.images = images
 
-        #partition by classification type
-        self.statuses = defaultdict(dict)
-        for k, v in images.iteritems():
-            self.statuses[v][k] = v
-
         self.setUp(subjectCount)
 
     def setUp(self, subjectCount):
@@ -39,10 +34,10 @@ class Simulation(object):
         """
         print("Creating {} Test Subjects".format(subjectCount))
         for i in range(subjectCount):
-            imgSize = random.randint(5, 200)
+            imgSize = random.randint(5, 50)
 
             #netspec is all layers after inputs, including output layer, which has to be 1
-            hiddenLayers = random.randint(0, 10)
+            hiddenLayers = random.randint(0, 1)
             netspec = [random.randint(1, 100) for x in range(hiddenLayers)] + [1]
             s = classifier.Classifier(
                 imageSize=(imgSize, imgSize),
@@ -55,32 +50,17 @@ class Simulation(object):
                 #netSpec=[1],
             #)
 
-            self.subjects.append(Subject(s))
+            self.subjects.append(Subject(s, self.images))
 
 
-    def simulate(self, chunk_size=10):
+    def simulate(self):
         """
         Run one generation.
         Train and evaluate each subject
         """
-        #randomize image order
-        keyOrder = self.images.keys()
-        random.shuffle(keyOrder)
-
         for s in self.subjects:
-            #pass in a chunk of randomly selected images, then evaluate runtime
-            for keys in util.grouper(keyOrder, chunk_size):
-                s.train(keys, [self.images[k] for k in keys])
-
-                #if it takes too long to train this network, it dies.
-                if s.runtimes[-1] > MAX_TRAIN_S:
-                    continue
-
-            #now evaluate fitness after training.
-            #choose 5 of each status randomly to evaluate
-            evaluateKeys = [x for st in self.statuses.keys() for
-                            x in random.sample(self.statuses[st], 5)]
-            s.evaluateFitness(evaluateKeys, [self.images[k] for k in evaluateKeys])
+            s.start()
+            s.join()
 
 
     def summarize(self):
@@ -93,13 +73,18 @@ class Simulation(object):
 
 
 
-class Subject(object):
+class Subject(multiprocessing.Process):
 
-    def __init__(self, classifier):
+    def __init__(self, classifier, imageDict={}, chunkSize=10):
         """
         A container for a single classifier.
         """
+        multiprocessing.Process.__init__(self)
         self.classifier = classifier
+        self.imageDict = imageDict
+
+        #how many images to train on at once
+        self.chunkSize = chunkSize
         self.runtimes = []
         self.errors = []
         self.imagesTrainedOn = 0
@@ -110,6 +95,32 @@ class Subject(object):
         #set to false if this classifier is rejected (e.g., it has an error
         #which causes it to crash)
         self.isAlive = True
+
+        #partition by classification type
+        self.statuses = defaultdict(dict)
+        for k, v in imageDict.iteritems():
+            self.statuses[v][k] = v
+
+
+    def run(self):
+        #randomize image order
+        keyOrder = self.imageDict.keys()
+        random.shuffle(keyOrder)
+
+        #pass in a chunk of randomly selected images, then evaluate runtime
+        for keys in util.grouper(keyOrder, self.chunkSize):
+            self.train(keys, [self.imageDict[k] for k in keys])
+
+            #if it takes too long to train this network, it dies.
+            if self.runtimes[-1] > MAX_TRAIN_S:
+                continue
+
+        #now evaluate fitness after training.
+        #choose 5 of each status randomly to evaluate
+        evaluateKeys = [x for st in self.statuses.keys() for
+                        x in random.sample(self.statuses[st], 5)]
+        s.evaluateFitness(evaluateKeys, [self.images[k] for k in evaluateKeys])
+
 
     def train(self, images, statuses):
         """
