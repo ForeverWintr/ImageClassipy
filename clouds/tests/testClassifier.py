@@ -56,9 +56,12 @@ class testTrainClassifier(unittest.TestCase):
             npar = np.array(ar, dtype=np.uint8).reshape(2, 2)
 
             image = PIL.Image.fromarray(npar)
-            path = tempfile.mktemp(suffix=".png", prefix='xor_', dir=cls.workspace)
-            image.save(path)
-            cls.xorImages.append((path, expected))
+
+            #pybrain needs a lot of test input. We'll make 20 of each image
+            for i in range(20):
+                path = tempfile.mktemp(suffix=".png", prefix='xor_', dir=cls.workspace)
+                image.save(path)
+                cls.xorImages.append((path, expected))
 
 
     @classmethod
@@ -70,7 +73,7 @@ class testTrainClassifier(unittest.TestCase):
         """
         Test that classifier can solve the xor problem
         """
-        c = classifier.Classifier(imageSize=(2, 2), netSpec=[4, 1], epochsPerImage=500)
+        c = classifier.Classifier(imageSize=(2, 2), netSpec=[2, 1])
 
         c.train(*zip(*self.xorImages))
 

@@ -4,10 +4,13 @@ A classifier is an entity that evaluates images for status (cloudy, canola, etc.
 import os
 import time
 from operator import mul, itemgetter
+from itertools import izip
 
 import PIL.Image
 import wand.image
-import neurolab
+from pybrain.tools.shortcuts import buildNetwork
+from pybrain.supervised import trainers
+from pybrain.datasets import SupervisedDataSet
 import numpy as np
 
 from clouds.util.constants import HealthStatus
@@ -15,13 +18,17 @@ from clouds.util.constants import HealthStatus
 
 class Classifier(object):
 
-    def __init__(self, imageSize=(128, 128), netSpec=(1, ), epochsPerImage=1):
-        self.inputSpec = [[0, 255] for x in range(mul(*imageSize))]
-        self.netSpec = netSpec
-        self.imageSize = tuple(float(x) for x in imageSize)
-        self.epochsPerImage = epochsPerImage
+    def __init__(self, imageSize=(128, 128), netSpec=(1, ),
+                 trainMethod=trainers.BackpropTrainer,
+                 trainDataset=SupervisedDataSet):
 
-        self.net = neurolab.net.newff(self.inputSpec, self.netSpec)
+        self.netSpec = [mul(*imageSize)] + netSpec
+        self.imageSize = tuple(float(x) for x in imageSize)
+        self.trainMethod = trainMethod
+        self.trainDataset = trainDataset
+
+        #self.net = neurolab.net.newff(self.inputSpec, self.netSpec)
+        self.net = buildNetwork(*self.netSpec)
 
         #statistics
         self.avgCertainty = None
@@ -34,18 +41,19 @@ class Classifier(object):
         return "<Classifier net {}>".format([self.net.ci]+self.netSpec)
 
     def train(self, images, statuses):
-        inputArray = np.array([self._loadToArray(i) for i in images])
+        ds = self.trainDataset(mul(*self.imageSize), 1)
+        [ds.addSample(self._loadToArray(i), e.value) for i, e in izip(images, statuses)]
 
-        targetArray = np.array([s.value for s in statuses]).reshape(len(statuses), 1)
-        epochs = len(images) * self.epochsPerImage
+        trainer = self.trainMethod(self.net, dataset=ds)
 
         start = time.clock()
-        errors = self.net.train(inputArray, targetArray, epochs=epochs, show=10)
+        trainErrors, validationErrors = trainer.trainUntilConvergence()
+
         trainTime = time.clock() - start
 
-        self.trainTime = trainTime / len(errors)
-        self.error = errors[-1]
-        return errors
+        self.trainTime = float(trainTime) / (len(trainErrors) + len(validationErrors))
+        self.error = validationErrors[-1]
+        return trainErrors, validationErrors
 
 
     def classify(self, imagePath):
