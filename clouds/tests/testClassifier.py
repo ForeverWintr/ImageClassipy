@@ -73,7 +73,7 @@ class testTrainClassifier(unittest.TestCase):
         """
         Test that classifier can solve the xor problem
         """
-        c = classifier.Classifier(imageSize=(2, 2), netSpec=[2, 1])
+        c = classifier.Classifier(imageSize=(2, 2), netSpec=[5, 1])
 
         c.train(*zip(*self.xorImages))
 

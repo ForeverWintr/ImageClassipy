@@ -61,11 +61,7 @@ class Classifier(object):
         Return a HealthStatus enum and a measure of our certainty.
         """
         start = time.clock()
-        imArray = self._loadToArray(imagePath)
-
-        #To appease the neurolab authors...
-        imArray = imArray.reshape(1, imArray.shape[0])
-        guess = self.net.sim(imArray)[0][0]
+        guess = self.net.activate(self._loadToArray(imagePath))
 
         print "Guess is", guess
 
