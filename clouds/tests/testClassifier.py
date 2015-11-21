@@ -73,13 +73,13 @@ class testTrainClassifier(unittest.TestCase):
         """
         Test that classifier can solve the xor problem
         """
-        c = classifier.Classifier(imageSize=(2, 2), netSpec=[5, 1])
+        c = classifier.Classifier(imageSize=(2, 2), netSpec=(8, 1))
 
         c.train(*zip(*self.xorImages))
 
         for image, expected in self.xorImages:
             self.assertEqual(c.classify(image)[0], expected)
-        pass
+
 
     def testTrain(self):
         """
@@ -103,7 +103,7 @@ class testTrainClassifier(unittest.TestCase):
         """
         c = classifier.Classifier(imageSize=(20, 20))
 
-        c.net.sim = lambda x: [[0.001]]
+        c.net.activate = lambda x: 0.001
 
         result = c.classify(self.testImages[0])
 

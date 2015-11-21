@@ -38,7 +38,7 @@ class Simulation(object):
 
             #netspec is all layers after inputs, including output layer, which has to be 1
             hiddenLayers = random.randint(0, 1)
-            netspec = [random.randint(1, 100) for x in range(hiddenLayers)] + [1]
+            netspec = tuple(random.randint(1, 100) for x in range(hiddenLayers)) + (1, )
             s = classifier.Classifier(
                 imageSize=(imgSize, imgSize),
                 netSpec=netspec,
@@ -119,7 +119,7 @@ class Subject(multiprocessing.Process):
         #choose 5 of each status randomly to evaluate
         evaluateKeys = [x for st in self.statuses.keys() for
                         x in random.sample(self.statuses[st], 5)]
-        s.evaluateFitness(evaluateKeys, [self.images[k] for k in evaluateKeys])
+        self.evaluateFitness(evaluateKeys, [self.imageDict[k] for k in evaluateKeys])
 
 
     def train(self, images, statuses):

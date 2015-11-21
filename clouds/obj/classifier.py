@@ -22,7 +22,7 @@ class Classifier(object):
                  trainMethod=trainers.BackpropTrainer,
                  trainDataset=SupervisedDataSet):
 
-        self.netSpec = [mul(*imageSize)] + netSpec
+        self.netSpec = (mul(*imageSize), ) + netSpec
         self.imageSize = tuple(float(x) for x in imageSize)
         self.trainMethod = trainMethod
         self.trainDataset = trainDataset
@@ -38,7 +38,7 @@ class Classifier(object):
         self.error = None
 
     def __repr__(self):
-        return "<Classifier net {}>".format([self.net.ci]+self.netSpec)
+        return "<Classifier net {}>".format(self.netSpec)
 
     def train(self, images, statuses):
         ds = self.trainDataset(mul(*self.imageSize), 1)
@@ -51,7 +51,11 @@ class Classifier(object):
 
         trainTime = time.clock() - start
 
-        self.trainTime = float(trainTime) / (len(trainErrors) + len(validationErrors))
+        iterations = len(trainErrors) + len(validationErrors)
+        print "Training took {} iterations".format(iterations)
+        print "Errors: {}, {}".format(trainErrors[-1], validationErrors[-1])
+
+        self.trainTime = float(trainTime) / iterations
         self.error = validationErrors[-1]
         return trainErrors, validationErrors
 
@@ -90,7 +94,7 @@ class Classifier(object):
 
         #resize
         scaleFactor = np.divide(self.imageSize, image.size)
-        newSize = tuple(x * s for x, s in zip(image.size, scaleFactor))
+        newSize = tuple(round(x * s) for x, s in zip(image.size, scaleFactor))
         image.thumbnail(newSize)
 
         #greyscale
