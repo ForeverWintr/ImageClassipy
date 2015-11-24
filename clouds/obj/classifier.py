@@ -4,10 +4,13 @@ A classifier is an entity that evaluates images for status (cloudy, canola, etc.
 import os
 import time
 from operator import mul, itemgetter
+from itertools import izip
 
 import PIL.Image
 import wand.image
-import neurolab
+from pybrain.tools.shortcuts import buildNetwork
+from pybrain.supervised import trainers
+from pybrain.datasets import SupervisedDataSet
 import numpy as np
 
 from clouds.util.constants import HealthStatus
@@ -15,13 +18,17 @@ from clouds.util.constants import HealthStatus
 
 class Classifier(object):
 
-    def __init__(self, imageSize=(128, 128), netSpec=(1, ), epochsPerImage=1):
-        self.inputSpec = [[0, 255] for x in range(mul(*imageSize))]
-        self.netSpec = netSpec
-        self.imageSize = tuple(float(x) for x in imageSize)
-        self.epochsPerImage = epochsPerImage
+    def __init__(self, imageSize=(128, 128), netSpec=(1, ),
+                 trainMethod=trainers.BackpropTrainer,
+                 trainDataset=SupervisedDataSet):
 
-        self.net = neurolab.net.newff(self.inputSpec, self.netSpec)
+        self.netSpec = (mul(*imageSize), ) + netSpec
+        self.imageSize = tuple(float(x) for x in imageSize)
+        self.trainMethod = trainMethod
+        self.trainDataset = trainDataset
+
+        #self.net = neurolab.net.newff(self.inputSpec, self.netSpec)
+        self.net = buildNetwork(*self.netSpec)
 
         #statistics
         self.avgCertainty = None
@@ -30,20 +37,27 @@ class Classifier(object):
         self.trainTime = None
         self.error = None
 
+    def __repr__(self):
+        return "<Classifier net {}>".format(self.netSpec)
 
     def train(self, images, statuses):
-        inputArray = np.array([self._loadToArray(i) for i in images])
+        ds = self.trainDataset(mul(*self.imageSize), 1)
+        [ds.addSample(self._loadToArray(i), e.value) for i, e in izip(images, statuses)]
 
-        targetArray = np.array([s.value for s in statuses]).reshape(len(statuses), 1)
-        epochs = len(images) * self.epochsPerImage
+        trainer = self.trainMethod(self.net, dataset=ds)
 
         start = time.clock()
-        errors = self.net.train(inputArray, targetArray, epochs=epochs, show=10)
+        trainErrors, validationErrors = trainer.trainUntilConvergence()
+
         trainTime = time.clock() - start
 
-        self.trainTime = trainTime / len(errors)
-        self.error = errors[-1]
-        return errors
+        iterations = len(trainErrors) + len(validationErrors)
+        print "Training took {} iterations".format(iterations)
+        print "Errors: {}, {}".format(trainErrors[-1], validationErrors[-1])
+
+        self.trainTime = float(trainTime) / iterations
+        self.error = validationErrors[-1]
+        return trainErrors, validationErrors
 
 
     def classify(self, imagePath):
@@ -51,11 +65,7 @@ class Classifier(object):
         Return a HealthStatus enum and a measure of our certainty.
         """
         start = time.clock()
-        imArray = self._loadToArray(imagePath)
-
-        #To appease the neurolab authors...
-        imArray = imArray.reshape(1, imArray.shape[0])
-        guess = self.net.sim(imArray)[0][0]
+        guess = self.net.activate(self._loadToArray(imagePath))
 
         print "Guess is", guess
 
@@ -84,11 +94,11 @@ class Classifier(object):
 
         #resize
         scaleFactor = np.divide(self.imageSize, image.size)
-        newSize = tuple(x * s for x, s in zip(image.size, scaleFactor))
+        newSize = tuple(round(x * s) for x, s in zip(image.size, scaleFactor))
         image.thumbnail(newSize)
 
         #greyscale
-        image = image.convert('F')
+        image = image.convert('L')
 
         # neurolab seems to expect 1d input, so rescale the images in the
         # input array as linear (the network does't know about shape anyway)
