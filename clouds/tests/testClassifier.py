@@ -10,13 +10,17 @@ import PIL
 
 from clouds.util.constants import HealthStatus
 from clouds.obj import classifier
+from pybrain.tools.customxml import NetworkReader
 
+TESTDATA = './data'
+XOR = os.path.join(TESTDATA, 'xor.xml')
 
 class testTrainClassifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         cls.workspace = tempfile.mkdtemp(prefix="testClassifier_")
+        cls.storedXor = os.path.join(os.path.dirname(__file__), XOR)
 
         #find test images
         tiffs = [
@@ -108,3 +112,17 @@ class testTrainClassifier(unittest.TestCase):
         result = c.classify(self.testImages[0])
 
         self.assertEqual(result, (HealthStatus.GOOD, 0.001))
+
+
+    def testSaveNetwork(self):
+        """
+        Save a network, make sure it's valid.
+        """
+        xor = NetworkReader.readFrom(self.storedXor)
+
+        c = classifier.Classifier(imageSize=(1, 1))
+        c.net = xor
+
+
+
+        print 'afs'

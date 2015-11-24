@@ -9,8 +9,8 @@ from clouds.util import farmglue
 # str and repr for classifiers
 # Pickle a simulation/classifiers
 # implement logging
-# subjects are processes
-# Test the train process
+# Subjects are directories. Worker processes
+#
 
 FARMDIR = r'/Users/tomrutherford/Documents/Hervalense'
 def main(argv):
