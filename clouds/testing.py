@@ -5,6 +5,7 @@ import neurolab
 import PIL
 import wand.image
 import os
+import camel
 
 RGB = r'/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-06-16_RE_112814/rgb/rgb.png'
 
@@ -18,6 +19,10 @@ scaleFactor = 0.32
 # training functions
 
 def main():
+
+
+
+def loadingExperiments():
     #image = misc.imread(RGB)
     image = _loadToArray(RGB)
     #image = wand.image.Image(filename=RGB)

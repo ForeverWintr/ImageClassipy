@@ -7,16 +7,21 @@ import shutil
 import mock
 import numpy as np
 import PIL
+from pybrain.tools.customxml import NetworkReader
+import camel
 
 from clouds.util.constants import HealthStatus
 from clouds.obj import classifier
 
+TESTDATA = './data'
+XOR = os.path.join(TESTDATA, 'xor.xml')
 
 class testTrainClassifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         cls.workspace = tempfile.mkdtemp(prefix="testClassifier_")
+        cls.storedXor = os.path.join(os.path.dirname(__file__), XOR)
 
         #find test images
         tiffs = [
@@ -108,3 +113,24 @@ class testTrainClassifier(unittest.TestCase):
         result = c.classify(self.testImages[0])
 
         self.assertEqual(result, (HealthStatus.GOOD, 0.001))
+
+
+    def testSaveNetwork(self):
+        """
+        Save a network, make sure it's valid.
+        """
+        xor = NetworkReader.readFrom(self.storedXor)
+        c = classifier.Classifier(imageSize=(2, 2), netSpec=(8, 1))
+        c.net = xor
+
+        storedPath = os.path.join(self.workspace, 'testNetDir')
+        c.dump(storedPath)
+
+        newC = classifier.Classifier.loadFromDir(storedPath)
+
+        self.assertEqual(c, newC)
+
+        #Make sure the net still works
+        for image, expected in self.xorImages:
+            self.assertEqual(c.classify(image)[0], expected)
+

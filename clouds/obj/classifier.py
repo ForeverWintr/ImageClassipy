@@ -5,27 +5,36 @@ import os
 import time
 from operator import mul, itemgetter
 from itertools import izip
+import codecs
+from collections import namedtuple
 
 import PIL.Image
 import wand.image
 from pybrain.tools.shortcuts import buildNetwork
 from pybrain.supervised import trainers
+from pybrain import datasets
 from pybrain.datasets import SupervisedDataSet
+from pybrain.tools.customxml import NetworkWriter, NetworkReader
 import numpy as np
+import camel
 
 from clouds.util.constants import HealthStatus
+from clouds import util
 
+sr = namedtuple('SerializeResult', ['classifier', 'net'])
 
 class Classifier(object):
+    _NET_NAME = 'net.xml'
+    _CLASSIFIER_NAME = 'classifier.yaml'
 
     def __init__(self, imageSize=(128, 128), netSpec=(1, ),
                  trainMethod=trainers.BackpropTrainer,
-                 trainDataset=SupervisedDataSet):
+                 datasetMethod=SupervisedDataSet):
 
         self.netSpec = (mul(*imageSize), ) + netSpec
         self.imageSize = tuple(float(x) for x in imageSize)
         self.trainMethod = trainMethod
-        self.trainDataset = trainDataset
+        self.datasetMethod = datasetMethod
 
         #self.net = neurolab.net.newff(self.inputSpec, self.netSpec)
         self.net = buildNetwork(*self.netSpec)
@@ -40,8 +49,24 @@ class Classifier(object):
     def __repr__(self):
         return "<Classifier net {}>".format(self.netSpec)
 
+    def __eq__(self, other):
+        if isinstance(other, Classifier):
+            return self._comparisonKey() == other._comparisonKey()
+        return NotImplemented
+
+    def _comparisonKey(self):
+        """
+        A tuple of attributes that can be used for comparison.
+        """
+        return (
+            self.imageSize,
+            self.netSpec,
+            repr(self.trainMethod),
+            repr(self.datasetMethod),
+        )
+
     def train(self, images, statuses):
-        ds = self.trainDataset(mul(*self.imageSize), 1)
+        ds = self.datasetMethod(mul(*self.imageSize), 1)
         [ds.addSample(self._loadToArray(i), e.value) for i, e in izip(images, statuses)]
 
         trainer = self.trainMethod(self.net, dataset=ds)
@@ -107,3 +132,58 @@ class Classifier(object):
         return imageArray.reshape(newSize)
 
 
+    def dump(self, dirPath):
+        """
+        Save a representation of this classifier and it's network at the given path.
+        """
+        if os.path.isdir(dirPath) and os.listdir(dirPath):
+            raise IOError("The directory exists and is not empty: {}".format(dirPath))
+        util.mkdir_p(dirPath)
+
+        #save network
+        NetworkWriter.writeToFile(self.net, os.path.join(dirPath, self._NET_NAME))
+
+        #save classifier
+        with open(os.path.join(dirPath, self._CLASSIFIER_NAME), 'w') as f:
+            f.write(serializer.dump(self))
+
+
+    @classmethod
+    def loadFromDir(cls, dirPath):
+        """
+        Return a classifier, loaded from the given directory.
+        """
+        with codecs.open(os.path.join(dirPath, cls._CLASSIFIER_NAME), encoding='utf-8') as f:
+            c = serializer.load(f.read())
+
+        c.net = NetworkReader.readFrom(os.path.join(dirPath, cls._NET_NAME))
+        return c
+
+
+classifierRegistry = camel.CamelRegistry()
+
+serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry))
+
+
+####################### DUMPERS #######################
+
+@classifierRegistry.dumper(Classifier, 'Classifier', 1)
+def _dumpClassifier(obj):
+    return {
+        u"imageSize": obj.imageSize,
+        u'netSpec': obj.netSpec[1:],
+        u'trainMethodName': unicode(obj.trainMethod.__name__),
+        u'datasetMethodName': unicode(obj.datasetMethod.__name__),
+    }
+
+
+####################### LOADERS #######################
+
+@classifierRegistry.loader('Classifier', 1)
+def _loadClassifier(data, version):
+    trainMethod = getattr(trainers.backprop, data.pop('trainMethodName'))
+    datasetMethod = getattr(datasets, data.pop('datasetMethodName'))
+    data['trainMethod'] = trainMethod
+    data['datasetMethod'] = datasetMethod
+
+    return Classifier(**data)
