@@ -120,7 +120,7 @@ class testTrainClassifier(unittest.TestCase):
         Save a network, make sure it's valid.
         """
         xor = NetworkReader.readFrom(self.storedXor)
-        c = classifier.Classifier(imageSize=(1, 1))
+        c = classifier.Classifier(imageSize=(2, 2), netSpec=(8, 1))
         c.net = xor
 
         storedPath = os.path.join(self.workspace, 'testNetDir')
@@ -130,4 +130,7 @@ class testTrainClassifier(unittest.TestCase):
 
         self.assertEqual(c, newC)
 
-        print 'afs'
+        #Make sure the net still works
+        for image, expected in self.xorImages:
+            self.assertEqual(c.classify(image)[0], expected)
+
