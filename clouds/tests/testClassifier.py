@@ -7,10 +7,11 @@ import shutil
 import mock
 import numpy as np
 import PIL
+from pybrain.tools.customxml import NetworkReader
+import camel
 
 from clouds.util.constants import HealthStatus
 from clouds.obj import classifier
-from pybrain.tools.customxml import NetworkReader
 
 TESTDATA = './data'
 XOR = os.path.join(TESTDATA, 'xor.xml')
@@ -119,10 +120,14 @@ class testTrainClassifier(unittest.TestCase):
         Save a network, make sure it's valid.
         """
         xor = NetworkReader.readFrom(self.storedXor)
-
         c = classifier.Classifier(imageSize=(1, 1))
         c.net = xor
 
+        storedPath = os.path.join(self.workspace, 'testNetDir')
+        c.dump(storedPath)
 
+        newC = classifier.Classifier.loadFromDir(storedPath)
+
+        self.assertEqual(c, newC)
 
         print 'afs'

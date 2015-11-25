@@ -5,18 +5,26 @@ import os
 import time
 from operator import mul, itemgetter
 from itertools import izip
+import codecs
+from collections import namedtuple
 
 import PIL.Image
 import wand.image
 from pybrain.tools.shortcuts import buildNetwork
 from pybrain.supervised import trainers
 from pybrain.datasets import SupervisedDataSet
+from pybrain.tools.customxml import NetworkWriter, NetworkReader
 import numpy as np
+import camel
 
 from clouds.util.constants import HealthStatus
+from clouds import util
 
+sr = namedtuple('SerializeResult', ['classifier', 'net'])
 
 class Classifier(object):
+    _NET_NAME = 'net.xml'
+    _CLASSIFIER_NAME = 'classifier.yaml'
 
     def __init__(self, imageSize=(128, 128), netSpec=(1, ),
                  trainMethod=trainers.BackpropTrainer,
@@ -39,6 +47,22 @@ class Classifier(object):
 
     def __repr__(self):
         return "<Classifier net {}>".format(self.netSpec)
+
+    def __eq__(self, other):
+        if isinstance(other, Classifier):
+            return self._comparisonKey() == other._comparisonKey()
+        return NotImplemented
+
+    def _comparisonKey(self):
+        """
+        A tuple of attributes that can be used for comparison.
+        """
+        return (
+            self.imageSize,
+            self.netSpec,
+            repr(self.trainMethod),
+            repr(self.trainDataset),
+        )
 
     def train(self, images, statuses):
         ds = self.trainDataset(mul(*self.imageSize), 1)
@@ -107,3 +131,47 @@ class Classifier(object):
         return imageArray.reshape(newSize)
 
 
+    def dump(self, dirPath):
+        """
+        Save a representation of this classifier and it's network at the given path.
+        """
+        if os.path.isdir(dirPath) and os.listdir(dirPath):
+            raise IOError("The directory exists and is not empty: {}".format(dirPath))
+        util.mkdir_p(dirPath)
+
+        #save network
+        NetworkWriter.writeToFile(self.net, os.path.join(dirPath, self._NET_NAME))
+
+        #save classifier
+        with open(os.path.join(dirPath, self._CLASSIFIER_NAME), 'w') as f:
+            f.write(camel.Camel([classifierRegistry]).dump(self))
+
+
+    @classmethod
+    def loadFromDir(cls, dirPath):
+        """
+        Return a classifier, loaded from the given directory.
+        """
+        with codecs.open(os.path.join(dirPath, cls._CLASSIFIER_NAME), encoding='utf-8') as f:
+            c = camel.Camel([classifierRegistry]).load(f.read())
+
+        c.net = NetworkReader.readFrom(os.path.join(dirPath, cls._NET_NAME))
+        return c
+
+
+classifierRegistry = camel.CamelRegistry()
+
+####################### DUMPERS #######################
+
+@classifierRegistry.dumper(Classifier, 'Classifier', 1)
+def _dumpClassifier(obj):
+    return {
+        #u"imageSize": obj.imageSize
+    }
+
+
+####################### LOADERS #######################
+
+@classifierRegistry.loader('Classifier', 1)
+def _loadClassifier(data, version):
+    return Classifier()
