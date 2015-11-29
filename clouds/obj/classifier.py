@@ -21,7 +21,6 @@ import camel
 from clouds.util.constants import HealthStatus
 from clouds import util
 
-sr = namedtuple('SerializeResult', ['classifier', 'net'])
 
 class Classifier(object):
     _NET_NAME = 'net.xml'
@@ -41,8 +40,6 @@ class Classifier(object):
 
         #statistics
         self.avgCertainty = None
-        self.avgClassifyTime = None
-        self.numClassifications = 0
         self.trainTime = None
         self.error = None
 
@@ -98,9 +95,6 @@ class Classifier(object):
 
         closestStatus = min(
             [(abs(guess - s), s) for s in possibleStatuses.keys()], key=itemgetter(0))
-
-        self.numClassifications += 1
-        self.avgClassifyTime = time.clock() - start / self.numClassifications
 
         return possibleStatuses[closestStatus[1]], closestStatus[0]
 
