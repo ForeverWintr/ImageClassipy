@@ -20,6 +20,7 @@ class testTrainClassifier(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        np.seterr(all='raise', under='warn')
         cls.workspace = tempfile.mkdtemp(prefix="testClassifier_")
         cls.storedXor = os.path.join(os.path.dirname(__file__), XOR)
 
@@ -78,7 +79,8 @@ class testTrainClassifier(unittest.TestCase):
         """
         Test that classifier can solve the xor problem
         """
-        c = classifier.Classifier(imageSize=(2, 2), netSpec=(8, 1))
+        c = classifier.Classifier(
+            set(zip(*self.xorImages)[1]), imageSize=(2, 2), hiddenLayers=(4, ))
 
         c.train(*zip(*self.xorImages))
 
@@ -91,14 +93,15 @@ class testTrainClassifier(unittest.TestCase):
         Just make sure we don't crash
         """
         seed = np.random.randint(2 ** 32)
-        #seed = 3558371868 # 2
-        #seed = 3547349022 # works
+        #seed = 2095592106 #validation will fail
         print 'Seed:', seed
         np.random.seed(seed)
 
-        c = classifier.Classifier(imageSize=(20, 20))
+        possibleStatuses = set(self.statuses)
+        c = classifier.Classifier(possibleStatuses, imageSize=(20, 20))
 
-        result = c.train(self.testImages, self.statuses)
+        result = c.train(
+            self.testImages, self.statuses, )
         print result
 
 
@@ -106,7 +109,7 @@ class testTrainClassifier(unittest.TestCase):
         """
         Return healthstatus and how sure we are.
         """
-        c = classifier.Classifier(imageSize=(20, 20))
+        c = classifier.Classifier(set(self.statuses), imageSize=(20, 20))
 
         c.net.activate = lambda x: 0.001
 

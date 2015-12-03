@@ -13,36 +13,37 @@ import wand.image
 from pybrain.tools.shortcuts import buildNetwork
 from pybrain.supervised import trainers
 from pybrain import datasets
-from pybrain.datasets import SupervisedDataSet
+from pybrain.datasets import ClassificationDataSet
 from pybrain.tools.customxml import NetworkWriter, NetworkReader
+from pybrain.structure.modules   import SoftmaxLayer
 import numpy as np
 import camel
 
 from clouds.util.constants import HealthStatus
 from clouds import util
 
-sr = namedtuple('SerializeResult', ['classifier', 'net'])
 
 class Classifier(object):
     _NET_NAME = 'net.xml'
     _CLASSIFIER_NAME = 'classifier.yaml'
 
-    def __init__(self, imageSize=(128, 128), netSpec=(1, ),
+    def __init__(self, possible_statuses, imageSize=(128, 128), hiddenLayers=None,
                  trainMethod=trainers.BackpropTrainer,
-                 datasetMethod=SupervisedDataSet):
+                 datasetMethod=ClassificationDataSet,
+                 outclass=SoftmaxLayer):
+        hiddenLayers = hiddenLayers or tuple()
 
-        self.netSpec = (mul(*imageSize), ) + netSpec
+        self.possibleStatuses = possible_statuses
+        self.netSpec = (mul(*imageSize), ) + hiddenLayers + (len(possible_statuses), )
         self.imageSize = tuple(float(x) for x in imageSize)
         self.trainMethod = trainMethod
         self.datasetMethod = datasetMethod
 
         #self.net = neurolab.net.newff(self.inputSpec, self.netSpec)
-        self.net = buildNetwork(*self.netSpec)
+        self.net = buildNetwork(*self.netSpec, outclass=outclass)
 
         #statistics
         self.avgCertainty = None
-        self.avgClassifyTime = None
-        self.numClassifications = 0
         self.trainTime = None
         self.error = None
 
@@ -66,19 +67,27 @@ class Classifier(object):
         )
 
     def train(self, images, statuses):
-        ds = self.datasetMethod(mul(*self.imageSize), 1)
+        numStatuses = len(self.possibleStatuses)
+        ds = self.datasetMethod(mul(*self.imageSize), 1, numStatuses)
         [ds.addSample(self._loadToArray(i), e.value) for i, e in izip(images, statuses)]
+
+        #convert to one output per class. Apparently this is a better format?
+        # http://pybrain.org/docs/tutorial/fnn.html
+        ds._convertToOneOfMany()
 
         trainer = self.trainMethod(self.net, dataset=ds)
 
         start = time.clock()
-        trainErrors, validationErrors = trainer.trainUntilConvergence()
+        trainErrors, validationErrors = trainer.trainUntilConvergence(convergence_threshold=4)
 
         trainTime = time.clock() - start
 
         iterations = len(trainErrors) + len(validationErrors)
         print "Training took {} iterations".format(iterations)
-        print "Errors: {}, {}".format(trainErrors[-1], validationErrors[-1])
+        if trainErrors:
+            print "Errors: {}, {}".format(trainErrors[-1], validationErrors[-1])
+        else:
+            print "Training unsuccesfull. Trainerrors is empty."
 
         self.trainTime = float(trainTime) / iterations
         self.error = validationErrors[-1]
@@ -90,19 +99,13 @@ class Classifier(object):
         Return a HealthStatus enum and a measure of our certainty.
         """
         start = time.clock()
-        guess = self.net.activate(self._loadToArray(imagePath))
+        result = self.net.activate(self._loadToArray(imagePath))
 
-        print "Guess is", guess
+        print "Result is:", result
 
-        possibleStatuses = HealthStatus._value2member_map_
+        guess = HealthStatus._value2member_map_[np.argmax(result)]
 
-        closestStatus = min(
-            [(abs(guess - s), s) for s in possibleStatuses.keys()], key=itemgetter(0))
-
-        self.numClassifications += 1
-        self.avgClassifyTime = time.clock() - start / self.numClassifications
-
-        return possibleStatuses[closestStatus[1]], closestStatus[0]
+        return guess, result
 
 
     def _loadToArray(self, imagePath):
@@ -130,6 +133,7 @@ class Classifier(object):
         imageArray = np.array(image)
         newSize = mul(*imageArray.shape)
         return imageArray.reshape(newSize)
+        #return imageArray
 
 
     def dump(self, dirPath):
