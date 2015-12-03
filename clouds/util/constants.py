@@ -1,6 +1,6 @@
 import enum
 
-class HealthStatus(enum.Enum):
+class HealthStatus(enum.IntEnum):
     GOOD = 0
     CLOUDY = 1
     CANOLA = 2
