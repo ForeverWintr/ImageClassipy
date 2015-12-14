@@ -9,48 +9,44 @@ we might mess up timing
 
 import random
 import sys
+import os
 from collections import defaultdict
 import multiprocessing
 
 import numpy as np
 
 from clouds.obj import classifier
+from clouds.obj import genome
 from clouds.util import util
+
+log = logging.getLogger('SimulationLogger')
 
 MAX_TRAIN_S = 60 * 60 * 2
 
 
 class Simulation(object):
 
-    def __init__(self, subjectCount, images={}):
+    def __init__(self, workingDir, subjectCount, images={}):
+        """
+        """
         self.subjects = []
         self.images = images
+        self.workingDir = workingDir
 
-        self.setUp(subjectCount)
+        #self.loadExistingSubjects(workingDir)
+        self.createSubjects(subjectCount)
 
-    def setUp(self, subjectCount):
+    def createSubjects(self, subjectCount):
         """
-        Create subjects
+        Create subjects. Load existing subjects from workingDir.
         """
-        print("Creating {} Test Subjects".format(subjectCount))
+        log.debug("Creating {} Test Subjects".format(subjectCount))
         for i in range(subjectCount):
-            imgSize = random.randint(5, 50)
+            name = 'Subject_{}'.format(i)
+            subjectDir = os.path.join(self.workingDir, name)
 
-            #netspec is all layers after inputs, including output layer, which has to be 1
-            hiddenLayers = random.randint(0, 1)
-            netspec = tuple(random.randint(1, 100) for x in range(hiddenLayers)) + (1, )
-            s = classifier.Classifier(
-                imageSize=(imgSize, imgSize),
-                netSpec=netspec,
-            )
-
-            ### TESTING XXXX
-            #s = classifier.Classifier(
-                #imageSize=(20, 20),
-                #netSpec=[1],
-            #)
-
-            self.subjects.append(Subject(s, self.images))
+            util.mkdir_p(subjectDir)
+            self.subjects.append(subjectDir)
 
 
     def simulate(self):
@@ -58,9 +54,6 @@ class Simulation(object):
         Run one generation.
         Train and evaluate each subject
         """
-        for s in self.subjects:
-            s.start()
-            s.join()
 
 
     def summarize(self):
@@ -73,14 +66,13 @@ class Simulation(object):
 
 
 
-class Subject(multiprocessing.Process):
+class Subject(object):
 
-    def __init__(self, classifier, imageDict={}, chunkSize=10):
+    def __init__(self, outputDir, classifier=None, imageDict={}, chunkSize=10):
         """
         A container for a single classifier.
         """
-        multiprocessing.Process.__init__(self)
-        self.classifier = classifier
+        self.classifier = classifier or
         self.imageDict = imageDict
 
         #how many images to train on at once
@@ -101,6 +93,18 @@ class Subject(multiprocessing.Process):
         for k, v in imageDict.iteritems():
             self.statuses[v][k] = v
 
+    def newClassifier(self):
+        """
+        Randomize a new classifier.
+        """
+        imgSize = random.randint(5, 50)
+
+        hiddenLayers = genome.HiddenLayers()
+        s = classifier.Classifier(
+            imageSize=(imgSize, imgSize),
+            hiddenLayers=hiddenLayers.layerlist
+        )
+        return s
 
     def run(self):
         #randomize image order

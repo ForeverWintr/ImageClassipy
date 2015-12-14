@@ -2,6 +2,9 @@ import os
 import errno
 from itertools import izip_longest
 
+import plotly.plotly as py
+import plotly.graph_objs as go
+
 
 def grouper(iterable, n, fillvalue=None):
     "Collect data into fixed-length chunks or blocks"
@@ -17,3 +20,15 @@ def mkdir_p(path):
         if exc.errno == errno.EEXIST and os.path.isdir(path):
             pass
         else: raise
+
+
+def plotlyHistorgram(data):
+    """
+    Create a plotly histogram of the given data.
+    """
+    d = [
+        go.Histogram(
+            x=data
+        )
+    ]
+    plot_url = py.plot(d, filename='basic-histogram')

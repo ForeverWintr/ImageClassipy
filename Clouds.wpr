@@ -29,3 +29,4 @@ proj.directory-list = [{'dirloc': loc('clouds'),
                         'recursive': True,
                         'watch_for_changes': True}]
 proj.file-type = 'shared'
+proj.main-file = loc('clouds/main.py')
