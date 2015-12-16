@@ -13,10 +13,7 @@ SEED = random.randint(0, np.iinfo(np.uint32).max)
 random.seed(SEED)
 np.random.seed(SEED)
 
-class Gene(object):
-    __metaclass__ = abc.ABCMeta
-
-    #the seed that was used to create this object
+class Gene(object, metaclass=abc.ABCMeta):
     _seed = SEED
 
     @abc.abstractproperty

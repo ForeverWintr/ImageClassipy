@@ -1,6 +1,6 @@
 import os
 import errno
-from itertools import izip_longest
+from itertools import zip_longest
 
 import plotly.plotly as py
 import plotly.graph_objs as go
@@ -10,7 +10,7 @@ def grouper(iterable, n, fillvalue=None):
     "Collect data into fixed-length chunks or blocks"
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
     args = [iter(iterable)] * n
-    return izip_longest(fillvalue=fillvalue, *args)
+    return zip_longest(fillvalue=fillvalue, *args)
 
 
 def mkdir_p(path):

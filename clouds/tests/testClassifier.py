@@ -82,7 +82,7 @@ class testTrainClassifier(unittest.TestCase):
         c = classifier.Classifier(
             set(zip(*self.xorImages)[1]), imageSize=(2, 2), hiddenLayers=(4, ))
 
-        c.train(*zip(*self.xorImages))
+        c.train(*list(zip(*self.xorImages)))
 
         for image, expected in self.xorImages:
             self.assertEqual(c.classify(image)[0], expected)
@@ -94,7 +94,7 @@ class testTrainClassifier(unittest.TestCase):
         """
         seed = np.random.randint(2 ** 32)
         #seed = 2095592106 #validation will fail
-        print 'Seed:', seed
+        print('Seed:', seed)
         np.random.seed(seed)
 
         possibleStatuses = set(self.statuses)
@@ -102,7 +102,7 @@ class testTrainClassifier(unittest.TestCase):
 
         result = c.train(
             self.testImages, self.statuses, )
-        print result
+        print(result)
 
 
     def testClassify(self):
