@@ -12,6 +12,7 @@ import sys
 import os
 from collections import defaultdict
 import multiprocessing
+import logging
 
 import numpy as np
 
@@ -45,15 +46,33 @@ class Simulation(object):
             name = 'Subject_{}'.format(i)
             subjectDir = os.path.join(self.workingDir, name)
 
-            util.mkdir_p(subjectDir)
+            s = Subject(subjectDir, classifier=self.createClassifier())
             self.subjects.append(subjectDir)
 
 
-    def simulate(self):
+    def createClassifier(self):
         """
-        Run one generation.
-        Train and evaluate each subject
+        Create a random classifier.
         """
+        hiddenLayers = genome.HiddenLayers()
+        trainMethod = genome.TrainMethod()
+        #imageSize = genome.
+
+        return classifier.Classifier(
+            possible_statuses=set(self.images.values()),
+            imageSize=None,
+            hiddenLayers=hiddenLayers.layerlist,
+            trainMethod=trainMethod.trainer,
+
+        )
+
+
+    def simulate(self, epochs=50):
+        """
+        Train each subject in increments of `epochs` times, and evaluate. Continue until ?
+        """
+
+        print asdf
 
 
     def summarize(self):
@@ -72,7 +91,7 @@ class Subject(object):
         """
         A container for a single classifier.
         """
-        self.classifier = classifier or
+        self.classifier = classifier or aasdf
         self.imageDict = imageDict
 
         #how many images to train on at once

@@ -1,5 +1,12 @@
 import sys
 import logging
+
+# Having these lines here defies PEP8, but we need to get the logger before
+# other packages import it
+logFormat = '%(levelname)s %(asctime)s: %(message)s'
+logging.basicConfig(level=logging.DEBUG, format=logFormat)
+log = logging.getLogger('SimulationLogger')
+
 import datetime
 import os
 
@@ -18,16 +25,10 @@ from clouds.util import farmglue
 FARMDIR = r'/Users/tomrutherford/Documents/Hervalense'
 WORKINGDIR = '/Users/tomrutherford/Documents/Data/clouds'
 
-
-logFormat = '%(levelname)s %(asctime)s: %(message)s'
-logging.basicConfig(level=logging.DEBUG, format=logFormat)
-log = logging.getLogger('SimulationLogger')
-
 def main(argv):
 
     np.seterr('raise')
     farmDir = FARMDIR
-    images = farmglue.imagesAndStatuses(farmDir)
 
 
     #logging setup
@@ -37,6 +38,9 @@ def main(argv):
     fileHandler = logging.FileHandler(logFile)
     fileHandler.setFormatter(logging.Formatter(logFormat))
     log.addHandler(fileHandler)
+
+    log.debug("Get images")
+    images = farmglue.imagesAndStatuses(farmDir)
 
     sim = genetics.Simulation(WORKINGDIR, 100, images)
     print sim.subjects
