@@ -7,6 +7,8 @@ import abc
 
 import numpy as np
 from pybrain.supervised import trainers
+from pybrain import datasets
+from pybrain.structure import modules
 
 
 SEED = random.randint(0, np.iinfo(np.uint32).max)
@@ -16,15 +18,38 @@ np.random.seed(SEED)
 class Gene(object, metaclass=abc.ABCMeta):
     _seed = SEED
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def parameter(self):
         pass
 
-#class ImageSize(gene):
-    #def __init__(self):
-        #self._imageSize = _
+
+class DatasetMethod(Gene):
+    def __init__(self):
+        self._dataset = datasets.ClassificationDataSet
+
+    @property
+    def parameter(self):
+        return self._dataset
 
 
+class OutClass(Gene):
+    def __init__(self):
+        self._outClass = modules.SoftmaxLayer
+
+    @property
+    def parameter(self):
+        return self._outClass
+
+
+class ImageSize(Gene):
+    def __init__(self):
+        size = _normalRandInt(5, 400)
+        self._imageSize = (size, size)
+
+    @property
+    def parameter(self):
+        return self._imageSize
 
 
 class TrainMethod(Gene):
@@ -32,25 +57,25 @@ class TrainMethod(Gene):
         self._trainer = trainers.BackpropTrainer
 
     @property
-    def trainer(self):
+    def parameter(self):
         return self._trainer
 
 
 class HiddenLayers(Gene):
-    def __init__(self, layerlist=None):
-        if layerlist is None:
-            self._layerlist = self.randomHiddenLayers()
+    def __init__(self, layers=None):
+        if layers is None:
+            self._layers = self.randomHiddenLayers()
         else:
-            self._layerlist = layerlist
+            self._layers = layers
 
     @property
-    def layerlist(self):
-        return self._layerlist
+    def parameter(self):
+        return self._layers
 
     @staticmethod
     def randomHiddenLayers(numRange=(0, 100), neuronRange=(1, 10000)):
         count = _normalRandInt(*numRange)
-        return [_normalRandInt(*neuronRange) for c in range(count)]
+        return tuple(_normalRandInt(*neuronRange) for c in range(count))
 
 
 def _normalRandInt(a, b):

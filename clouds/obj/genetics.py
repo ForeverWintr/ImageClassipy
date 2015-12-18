@@ -47,7 +47,7 @@ class Simulation(object):
             subjectDir = os.path.join(self.workingDir, name)
 
             s = Subject(subjectDir, classifier=self.createClassifier())
-            self.subjects.append(subjectDir)
+            self.subjects.append(s)
 
 
     def createClassifier(self):
@@ -56,14 +56,17 @@ class Simulation(object):
         """
         hiddenLayers = genome.HiddenLayers()
         trainMethod = genome.TrainMethod()
-        #imageSize = genome.
+        imageSize = genome.ImageSize()
+        datasetMethod = genome.DatasetMethod()
+        outClass = genome.OutClass()
 
         return classifier.Classifier(
             possible_statuses=set(self.images.values()),
-            imageSize=None,
-            hiddenLayers=hiddenLayers.layerlist,
-            trainMethod=trainMethod.trainer,
-
+            imageSize=imageSize.parameter,
+            hiddenLayers=hiddenLayers.parameter,
+            trainMethod=trainMethod.parameter,
+            datasetMethod=datasetMethod.parameter,
+            outclass=outClass.parameter,
         )
 
 
@@ -121,7 +124,7 @@ class Subject(object):
         hiddenLayers = genome.HiddenLayers()
         s = classifier.Classifier(
             imageSize=(imgSize, imgSize),
-            hiddenLayers=hiddenLayers.layerlist
+            hiddenLayers=hiddenLayers.parameter
         )
         return s
 

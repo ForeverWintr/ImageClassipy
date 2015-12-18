@@ -80,12 +80,14 @@ class testTrainClassifier(unittest.TestCase):
         Test that classifier can solve the xor problem
         """
         c = classifier.Classifier(
-            set(zip(*self.xorImages)[1]), imageSize=(2, 2), hiddenLayers=(4, ))
+            set(list(zip(*self.xorImages))[1]), imageSize=(2, 2), hiddenLayers=(4, ))
 
         c.train(*list(zip(*self.xorImages)))
 
         for image, expected in self.xorImages:
             self.assertEqual(c.classify(image)[0], expected)
+
+        print('done')
 
 
     def testTrain(self):
@@ -123,7 +125,7 @@ class testTrainClassifier(unittest.TestCase):
         Save a network, make sure it's valid.
         """
         xor = NetworkReader.readFrom(self.storedXor)
-        c = classifier.Classifier(imageSize=(2, 2), netSpec=(8, 1))
+        c = classifier.Classifier([HealthStatus.GOOD], imageSize=(2, 2), hiddenLayers=(8, ))
         c.net = xor
 
         storedPath = os.path.join(self.workspace, 'testNetDir')

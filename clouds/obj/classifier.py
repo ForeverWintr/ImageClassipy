@@ -4,7 +4,6 @@ A classifier is an entity that evaluates images for status (cloudy, canola, etc.
 import os
 import time
 from operator import mul, itemgetter
-
 import codecs
 from collections import namedtuple
 
@@ -15,11 +14,11 @@ from pybrain.supervised import trainers
 from pybrain import datasets
 from pybrain.datasets import ClassificationDataSet
 from pybrain.tools.customxml import NetworkWriter, NetworkReader
-from pybrain.structure.modules   import SoftmaxLayer
+from pybrain.structure.modules import SoftmaxLayer
 import numpy as np
 import camel
 
-from clouds.util.constants import HealthStatus
+from clouds.util.constants import HealthStatus, healthStatusRegistry
 from clouds import util
 
 
@@ -166,7 +165,7 @@ class Classifier(object):
 
 classifierRegistry = camel.CamelRegistry()
 
-serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry))
+serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry, healthStatusRegistry))
 
 
 ####################### DUMPERS #######################
@@ -174,8 +173,9 @@ serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry))
 @classifierRegistry.dumper(Classifier, 'Classifier', 1)
 def _dumpClassifier(obj):
     return {
+        'possible_statuses': obj.possibleStatuses,
         "imageSize": obj.imageSize,
-        'netSpec': obj.netSpec[1:],
+        'hiddenLayers': obj.netSpec[1:-1],
         'trainMethodName': str(obj.trainMethod.__name__),
         'datasetMethodName': str(obj.datasetMethod.__name__),
     }
