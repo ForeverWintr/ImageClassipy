@@ -26,11 +26,11 @@ class testTrainClassifier(unittest.TestCase):
 
         #find test images
         tiffs = [
-            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-05-23_RE_75328/rgb/rgb.tif',
-            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-06-11_RE_109891/rgb/rgb.tif',
-            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-06-16_RE_112814/rgb/rgb.tif',
-            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-07-21_RE_162812/rgb/rgb.tif',
-            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-07-31_RE_195671/rgb/rgb.tif',
+            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/tests/data/healthSegments/2015-05-23_RE_75328/rgb/rgb.tif',
+            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/tests/data/healthSegments/2015-06-11_RE_109891/rgb/rgb.tif',
+            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/tests/data/healthSegments/2015-06-16_RE_112814/rgb/rgb.tif',
+            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/tests/data/healthSegments/2015-07-21_RE_162812/rgb/rgb.tif',
+            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/tests/data/healthSegments/2015-07-31_RE_195671/rgb/rgb.tif',
         ]
 
         #Replace tiffs with pngs if they exist
