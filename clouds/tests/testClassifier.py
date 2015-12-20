@@ -26,11 +26,11 @@ class testTrainClassifier(unittest.TestCase):
 
         #find test images
         tiffs = [
-            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-05-23_RE_75328/rgb/rgb.tif',
-            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-06-11_RE_109891/rgb/rgb.tif',
-            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-06-16_RE_112814/rgb/rgb.tif',
-            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-07-21_RE_162812/rgb/rgb.tif',
-            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-07-31_RE_195671/rgb/rgb.tif',
+            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/tests/data/healthSegments/2015-05-23_RE_75328/rgb/rgb.tif',
+            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/tests/data/healthSegments/2015-06-11_RE_109891/rgb/rgb.tif',
+            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/tests/data/healthSegments/2015-06-16_RE_112814/rgb/rgb.tif',
+            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/tests/data/healthSegments/2015-07-21_RE_162812/rgb/rgb.tif',
+            '/Users/tomrutherford/Dropbox/Code/Wing/clouds/clouds/tests/data/healthSegments/2015-07-31_RE_195671/rgb/rgb.tif',
         ]
 
         #Replace tiffs with pngs if they exist
@@ -80,12 +80,14 @@ class testTrainClassifier(unittest.TestCase):
         Test that classifier can solve the xor problem
         """
         c = classifier.Classifier(
-            set(zip(*self.xorImages)[1]), imageSize=(2, 2), hiddenLayers=(4, ))
+            set(list(zip(*self.xorImages))[1]), imageSize=(2, 2), hiddenLayers=(4, ))
 
-        c.train(*zip(*self.xorImages))
+        c.train(*list(zip(*self.xorImages)))
 
         for image, expected in self.xorImages:
             self.assertEqual(c.classify(image)[0], expected)
+
+        print('done')
 
 
     def testTrain(self):
@@ -94,7 +96,7 @@ class testTrainClassifier(unittest.TestCase):
         """
         seed = np.random.randint(2 ** 32)
         #seed = 2095592106 #validation will fail
-        print 'Seed:', seed
+        print('Seed:', seed)
         np.random.seed(seed)
 
         possibleStatuses = set(self.statuses)
@@ -102,7 +104,7 @@ class testTrainClassifier(unittest.TestCase):
 
         result = c.train(
             self.testImages, self.statuses, )
-        print result
+        print(result)
 
 
     def testClassify(self):
@@ -123,7 +125,7 @@ class testTrainClassifier(unittest.TestCase):
         Save a network, make sure it's valid.
         """
         xor = NetworkReader.readFrom(self.storedXor)
-        c = classifier.Classifier(imageSize=(2, 2), netSpec=(8, 1))
+        c = classifier.Classifier([HealthStatus.GOOD], imageSize=(2, 2), hiddenLayers=(8, ))
         c.net = xor
 
         storedPath = os.path.join(self.workspace, 'testNetDir')

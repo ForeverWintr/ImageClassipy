@@ -43,8 +43,8 @@ def main(argv):
     images = farmglue.imagesAndStatuses(farmDir)
 
     sim = genetics.Simulation(WORKINGDIR, 100, images)
-    print sim.subjects
-    print sim.subjects[0].classifier
+    print(sim.subjects)
+    print(sim.subjects[0].classifier)
     log.debug("Simulating.")
     sim.simulate()
 

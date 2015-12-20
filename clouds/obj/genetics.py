@@ -47,7 +47,7 @@ class Simulation(object):
             subjectDir = os.path.join(self.workingDir, name)
 
             s = Subject(subjectDir, classifier=self.createClassifier())
-            self.subjects.append(subjectDir)
+            self.subjects.append(s)
 
 
     def createClassifier(self):
@@ -56,14 +56,17 @@ class Simulation(object):
         """
         hiddenLayers = genome.HiddenLayers()
         trainMethod = genome.TrainMethod()
-        #imageSize = genome.
+        imageSize = genome.ImageSize()
+        datasetMethod = genome.DatasetMethod()
+        outClass = genome.OutClass()
 
         return classifier.Classifier(
             possible_statuses=set(self.images.values()),
-            imageSize=None,
-            hiddenLayers=hiddenLayers.layerlist,
-            trainMethod=trainMethod.trainer,
-
+            imageSize=imageSize.parameter,
+            hiddenLayers=hiddenLayers.parameter,
+            trainMethod=trainMethod.parameter,
+            datasetMethod=datasetMethod.parameter,
+            outclass=outClass.parameter,
         )
 
 
@@ -72,7 +75,7 @@ class Simulation(object):
         Train each subject in increments of `epochs` times, and evaluate. Continue until ?
         """
 
-        print asdf
+        print(asdf)
 
 
     def summarize(self):
@@ -81,7 +84,7 @@ class Simulation(object):
         """
         print("Classifier fitness:")
         for c in sorted(self.subjects, key=lambda s: s.fitness):
-            print(c.fitness)
+            print((c.fitness))
 
 
 
@@ -109,7 +112,7 @@ class Subject(object):
 
         #partition by classification type
         self.statuses = defaultdict(dict)
-        for k, v in imageDict.iteritems():
+        for k, v in imageDict.items():
             self.statuses[v][k] = v
 
     def newClassifier(self):
@@ -121,13 +124,13 @@ class Subject(object):
         hiddenLayers = genome.HiddenLayers()
         s = classifier.Classifier(
             imageSize=(imgSize, imgSize),
-            hiddenLayers=hiddenLayers.layerlist
+            hiddenLayers=hiddenLayers.parameter
         )
         return s
 
     def run(self):
         #randomize image order
-        keyOrder = self.imageDict.keys()
+        keyOrder = list(self.imageDict.keys())
         random.shuffle(keyOrder)
 
         #pass in a chunk of randomly selected images, then evaluate runtime
@@ -140,7 +143,7 @@ class Subject(object):
 
         #now evaluate fitness after training.
         #choose 5 of each status randomly to evaluate
-        evaluateKeys = [x for st in self.statuses.keys() for
+        evaluateKeys = [x for st in list(self.statuses.keys()) for
                         x in random.sample(self.statuses[st], 5)]
         self.evaluateFitness(evaluateKeys, [self.imageDict[k] for k in evaluateKeys])
 
@@ -155,7 +158,7 @@ class Subject(object):
             self.errors.append(self.classifier.error)
         except Exception:
             self.isAlive = False
-            self.runtimes.append(sys.maxint)
+            self.runtimes.append(sys.maxsize)
         else:
             self.imagesTrainedOn += len(images)
             self.runtimes.append(self.classifier.trainTime)

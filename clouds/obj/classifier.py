@@ -4,7 +4,6 @@ A classifier is an entity that evaluates images for status (cloudy, canola, etc.
 import os
 import time
 from operator import mul, itemgetter
-from itertools import izip
 import codecs
 from collections import namedtuple
 
@@ -15,11 +14,11 @@ from pybrain.supervised import trainers
 from pybrain import datasets
 from pybrain.datasets import ClassificationDataSet
 from pybrain.tools.customxml import NetworkWriter, NetworkReader
-from pybrain.structure.modules   import SoftmaxLayer
+from pybrain.structure.modules import SoftmaxLayer
 import numpy as np
 import camel
 
-from clouds.util.constants import HealthStatus
+from clouds.util.constants import HealthStatus, healthStatusRegistry
 from clouds import util
 
 
@@ -69,7 +68,7 @@ class Classifier(object):
     def train(self, images, statuses):
         numStatuses = len(self.possibleStatuses)
         ds = self.datasetMethod(mul(*self.imageSize), 1, numStatuses)
-        [ds.addSample(self._loadToArray(i), e.value) for i, e in izip(images, statuses)]
+        [ds.addSample(self._loadToArray(i), e.value) for i, e in zip(images, statuses)]
 
         #convert to one output per class. Apparently this is a better format?
         # http://pybrain.org/docs/tutorial/fnn.html
@@ -83,11 +82,11 @@ class Classifier(object):
         trainTime = time.clock() - start
 
         iterations = len(trainErrors) + len(validationErrors)
-        print "Training took {} iterations".format(iterations)
+        print("Training took {} iterations".format(iterations))
         if trainErrors:
-            print "Errors: {}, {}".format(trainErrors[-1], validationErrors[-1])
+            print("Errors: {}, {}".format(trainErrors[-1], validationErrors[-1]))
         else:
-            print "Training unsuccesfull. Trainerrors is empty."
+            print("Training unsuccesfull. Trainerrors is empty.")
 
         self.trainTime = float(trainTime) / iterations
         self.error = validationErrors[-1]
@@ -101,7 +100,7 @@ class Classifier(object):
         start = time.clock()
         result = self.net.activate(self._loadToArray(imagePath))
 
-        print "Result is:", result
+        print("Result is:", result)
 
         guess = HealthStatus._value2member_map_[np.argmax(result)]
 
@@ -166,7 +165,7 @@ class Classifier(object):
 
 classifierRegistry = camel.CamelRegistry()
 
-serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry))
+serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry, healthStatusRegistry))
 
 
 ####################### DUMPERS #######################
@@ -174,10 +173,11 @@ serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry))
 @classifierRegistry.dumper(Classifier, 'Classifier', 1)
 def _dumpClassifier(obj):
     return {
-        u"imageSize": obj.imageSize,
-        u'netSpec': obj.netSpec[1:],
-        u'trainMethodName': unicode(obj.trainMethod.__name__),
-        u'datasetMethodName': unicode(obj.datasetMethod.__name__),
+        'possible_statuses': obj.possibleStatuses,
+        "imageSize": obj.imageSize,
+        'hiddenLayers': obj.netSpec[1:-1],
+        'trainMethodName': str(obj.trainMethod.__name__),
+        'datasetMethodName': str(obj.datasetMethod.__name__),
     }
 
 
