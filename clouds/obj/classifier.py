@@ -4,7 +4,7 @@ A classifier is an entity that evaluates images for status (cloudy, canola, etc.
 import os
 import time
 from operator import mul, itemgetter
-import codecs
+import logging
 from collections import namedtuple
 
 import PIL.Image
@@ -22,6 +22,9 @@ from clouds.util.constants import HealthStatus, healthStatusRegistry
 from clouds import util
 
 
+log = logging.getLogger('SimulationLogger')
+
+
 class Classifier(object):
     _NET_NAME = 'net.xml'
     _camelName = 'classifier.yaml'
@@ -29,7 +32,7 @@ class Classifier(object):
     def __init__(self, possible_statuses, imageSize=(128, 128), hiddenLayers=None,
                  trainMethod=trainers.BackpropTrainer,
                  datasetMethod=ClassificationDataSet,
-                 outclass=SoftmaxLayer):
+                 outclass=SoftmaxLayer, convergenceThreshold=10):
         hiddenLayers = hiddenLayers or tuple()
 
         self.possibleStatuses = possible_statuses
@@ -37,10 +40,8 @@ class Classifier(object):
         self.imageSize = tuple(float(x) for x in imageSize)
         self.trainMethod = trainMethod
         self.datasetMethod = datasetMethod
-
-        #self.net = neurolab.net.newff(self.inputSpec, self.netSpec)
         self.net = buildNetwork(*self.netSpec, outclass=outclass)
-
+        self.convergenceThreshold = convergenceThreshold
         #statistics
         self.avgCertainty = None
         self.trainTime = None
@@ -77,16 +78,17 @@ class Classifier(object):
         trainer = self.trainMethod(self.net, dataset=ds)
 
         start = time.clock()
-        trainErrors, validationErrors = trainer.trainUntilConvergence(convergence_threshold=4)
+        trainErrors, validationErrors = trainer.trainUntilConvergence(
+            convergence_threshold=self.convergenceThreshold)
 
         trainTime = time.clock() - start
 
         iterations = len(trainErrors) + len(validationErrors)
-        print("Training took {} iterations".format(iterations))
+        log.debug("Training took {} iterations".format(iterations))
         if trainErrors:
-            print("Errors: {}, {}".format(trainErrors[-1], validationErrors[-1]))
+            log.debug("Errors: {}, {}".format(trainErrors[-1], validationErrors[-1]))
         else:
-            print("Training unsuccesfull. Trainerrors is empty.")
+            log.debug("Training unsuccesfull. Trainerrors is empty.")
 
         self.trainTime = float(trainTime) / iterations
         self.error = validationErrors[-1]
@@ -135,11 +137,11 @@ class Classifier(object):
         #return imageArray
 
 
-    def dump(self, dirPath):
+    def dump(self, dirPath, overwrite):
         """
         Save a representation of this classifier and it's network at the given path.
         """
-        if os.path.isdir(dirPath) and os.listdir(dirPath):
+        if not overwrite and os.path.isdir(dirPath) and os.listdir(dirPath):
             raise IOError("The directory exists and is not empty: {}".format(dirPath))
         util.mkdir_p(dirPath)
 
@@ -176,6 +178,7 @@ def _dumpClassifier(obj):
         'hiddenLayers': obj.netSpec[1:-1],
         'trainMethodName': str(obj.trainMethod.__name__),
         'datasetMethodName': str(obj.datasetMethod.__name__),
+        'convergenceThreshold': obj.convergenceThreshold,
     }
 
 

@@ -11,3 +11,4 @@ possible_statuses:
 - !HealthStatus;1
   status: CLOUDY
 trainMethodName: BackpropTrainer
+convergenceThreshold: 4

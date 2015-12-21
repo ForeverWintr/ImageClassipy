@@ -5,6 +5,7 @@ import neurolab
 import PIL
 import wand.image
 import os
+import multiprocessing
 import camel
 
 RGB = r'/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-06-16_RE_112814/rgb/rgb.png'
@@ -19,8 +20,14 @@ scaleFactor = 0.32
 # training functions
 
 def main():
-    pass
+    p = multiprocessing.Pool()
+    print(p.map(Test.f, [1, 2, 3, 4, 5, 6, 7, 8]))
 
+
+class Test(object):
+    @staticmethod
+    def f(x):
+        return 1
 
 def loadingExperiments():
     #image = misc.imread(RGB)
@@ -36,10 +43,10 @@ def loadingExperiments():
     shapedImage = image.reshape(1, image.size)
     shapedTarget = np.zeros([1, 1])
 
-    print "Training"
+    print ("Training")
     net.train(shapedImage, shapedTarget, epochs=1, show=1)
 
-    print "Done"
+    print ("Done")
     pass
 
 

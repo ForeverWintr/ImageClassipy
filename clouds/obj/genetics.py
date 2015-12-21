@@ -49,7 +49,8 @@ class Simulation(object):
             name = 'Subject_{}'.format(i)
             subjectDir = os.path.join(self.workingDir, name)
 
-            s = Subject(subjectDir, classifier=self.createClassifier())
+            s = Subject(subjectDir, classifier_=self.createClassifier(), imageDict=self.images)
+            s.dump()
             self.subjects.append(s)
 
 
@@ -73,13 +74,28 @@ class Simulation(object):
         )
 
 
-    def simulate(self, epochs=50):
+    def simulate(self, numWorkers=None):
         """
         Train each subject in increments of `epochs` times, and evaluate. Continue until ?
         """
+        assert self.subjects, "Can't simulate without subjects!"
+        if not numWorkers:
+            numWorkers = min(multiprocessing.cpu_count() - 1, len(self.subjects))
 
-        print(asdf)
+        #If we've only got 1 worker, don't bother with a pool
+        if numWorkers <= 1:
+            result = [self._runSubject(s.outputDir) for s in self.subjects]
 
+    @staticmethod
+    def _runSubject(subjectDir):
+        """
+        Run a single subject, loaded from the given dir. This method is static, and the subject is
+        loaded from a directory in order to work around multiprocessing's inability to pickle non
+        static class methods.
+        """
+        s = Subject.loadFromDir(subjectDir)
+        s.train()
+        s.save()
 
     def summarize(self):
         """
@@ -139,15 +155,23 @@ class Subject(object):
             self.chunkSize
         )
 
-    def dump(self, dirPath):
+    def save(self):
+        """
+        Save self to our directory. Overwriting old data.
+        """
+        self.dump(overwrite=True)
+
+    def dump(self, dirPath=None, overwrite=False):
         """
         Save a representation of self in the given directory.
         """
-        if os.path.isdir(dirPath) and os.listdir(dirPath):
+        if not dirPath:
+            dirPath = self.outputDir
+        if not overwrite and os.path.isdir(dirPath) and os.listdir(dirPath):
             raise IOError("The directory exists and is not empty: {}".format(dirPath))
         util.mkdir_p(dirPath)
 
-        self.classifier.dump(os.path.join(dirPath, 'classifier'))
+        self.classifier.dump(os.path.join(dirPath, 'classifier'), overwrite)
         with open(os.path.join(dirPath, self._camelName), 'w') as f:
             f.write(serializer.dump(self))
 
@@ -183,19 +207,20 @@ class Subject(object):
         self.evaluateFitness(evaluateKeys, [self.imageDict[k] for k in evaluateKeys])
 
 
-    def train(self, images, statuses):
+    def train(self, maxEpochs=1000):
         """
         Train our classifier by feeding it images and statuses.
         """
 
         try:
-            self.classifier.train(images, statuses)
+            self.classifier.train(*list(zip(*self.imageDict.items())))
             self.errors.append(self.classifier.error)
-        except Exception:
+        except Exception as e:
+            log.exception("Subject {} Died".format(self.name))
             self.isAlive = False
             self.runtimes.append(sys.maxsize)
         else:
-            self.imagesTrainedOn += len(images)
+            self.imagesTrainedOn += len(self.imageDict)
             self.runtimes.append(self.classifier.trainTime)
 
     def evaluateFitness(self, images, statuses):

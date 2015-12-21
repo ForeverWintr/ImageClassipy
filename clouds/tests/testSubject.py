@@ -3,7 +3,7 @@ import shutil
 import tempfile
 import os
 
-#import numpy as np
+import numpy as np
 
 from clouds.obj.genetics import Subject
 from clouds.obj.classifier import Classifier
@@ -15,7 +15,7 @@ class testSubject(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        #np.seterr(all='raise', under='warn')
+        np.seterr(all='raise', under='warn')
         cls.workspace = tempfile.mkdtemp(prefix="testSubject_")
         cls.storedClassifier = os.path.join(cls.workspace, 'sc')
         shutil.copytree(os.path.join(TESTDATA, 'xorClassifier'), cls.storedClassifier)
