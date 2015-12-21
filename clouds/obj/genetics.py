@@ -98,6 +98,7 @@ class Subject(object):
         """
         A container for a single classifier.
         """
+        self.name = os.path.basename(outputDir)
         self.outputDir = outputDir
         self.classifier = classifier_
         self.imageDict = imageDict
@@ -120,19 +121,23 @@ class Subject(object):
         for k, v in imageDict.items():
             self.statuses[v][k] = v
 
-    @staticmethod
-    def newClassifier(self):
-        """
-        Randomize a new classifier.
-        """
-        imgSize = random.randint(5, 50)
+    def __repr__(self):
+        return "<Subject {}>".format(self.name)
 
-        hiddenLayers = genome.HiddenLayers()
-        s = Classifier(
-            imageSize=(imgSize, imgSize),
-            hiddenLayers=hiddenLayers.parameter
+    def __eq__(self, other):
+        if isinstance(other, Subject):
+            return self._comparisonKey() == other._comparisonKey()
+        return NotImplemented
+
+    def _comparisonKey(self):
+        """
+        A tuple of attributes that can be used for comparison.
+        """
+        return (
+            self.name,
+            self.classifier,
+            self.chunkSize
         )
-        return s
 
     def dump(self, dirPath):
         """

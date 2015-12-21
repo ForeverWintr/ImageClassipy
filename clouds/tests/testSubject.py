@@ -27,7 +27,7 @@ class testSubject(unittest.TestCase):
         shutil.rmtree(cls.workspace)
 
     def testStoreSubject(self):
-        d = os.path.join(self.workspace, 'subject')
+        d = os.path.join(self.workspace, 'testSubject')
         c = Classifier.loadFromDir(self.storedClassifier)
         s = Subject(d, c)
 
@@ -42,8 +42,6 @@ class testSubject(unittest.TestCase):
         self.assertEqual(s, loaded)
 
         #assert that the xor still works
-        for img, status in cls.xors:
-            self.assertEqual(loaded.classify(img)[0], status)
-
-        print(asdf)
+        for img, status in self.xors:
+            self.assertEqual(loaded.classifier.classify(img)[0], status)
 
