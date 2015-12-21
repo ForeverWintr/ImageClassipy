@@ -15,10 +15,13 @@ import multiprocessing
 import logging
 
 import numpy as np
+import camel
 
 from clouds.obj import classifier
+from clouds.obj.classifier import Classifier
 from clouds.obj import genome
 from clouds.util import util
+from clouds.util import constants
 
 log = logging.getLogger('SimulationLogger')
 
@@ -60,7 +63,7 @@ class Simulation(object):
         datasetMethod = genome.DatasetMethod()
         outClass = genome.OutClass()
 
-        return classifier.Classifier(
+        return Classifier(
             possible_statuses=set(self.images.values()),
             imageSize=imageSize.parameter,
             hiddenLayers=hiddenLayers.parameter,
@@ -89,12 +92,14 @@ class Simulation(object):
 
 
 class Subject(object):
+    _camelName = 'subject.yaml'
 
-    def __init__(self, outputDir, classifier=None, imageDict={}, chunkSize=10):
+    def __init__(self, outputDir, classifier_=None, imageDict={}, chunkSize=10, isAlive=True):
         """
         A container for a single classifier.
         """
-        self.classifier = classifier or aasdf
+        self.outputDir = outputDir
+        self.classifier = classifier_
         self.imageDict = imageDict
 
         #how many images to train on at once
@@ -108,13 +113,14 @@ class Subject(object):
 
         #set to false if this classifier is rejected (e.g., it has an error
         #which causes it to crash)
-        self.isAlive = True
+        self.isAlive = isAlive
 
         #partition by classification type
         self.statuses = defaultdict(dict)
         for k, v in imageDict.items():
             self.statuses[v][k] = v
 
+    @staticmethod
     def newClassifier(self):
         """
         Randomize a new classifier.
@@ -122,11 +128,35 @@ class Subject(object):
         imgSize = random.randint(5, 50)
 
         hiddenLayers = genome.HiddenLayers()
-        s = classifier.Classifier(
+        s = Classifier(
             imageSize=(imgSize, imgSize),
             hiddenLayers=hiddenLayers.parameter
         )
         return s
+
+    def dump(self, dirPath):
+        """
+        Save a representation of self in the given directory.
+        """
+        if os.path.isdir(dirPath) and os.listdir(dirPath):
+            raise IOError("The directory exists and is not empty: {}".format(dirPath))
+        util.mkdir_p(dirPath)
+
+        self.classifier.dump(os.path.join(dirPath, 'classifier'))
+        with open(os.path.join(dirPath, self._camelName), 'w') as f:
+            f.write(serializer.dump(self))
+
+    @classmethod
+    def loadFromDir(cls, dirPath):
+        """
+        Return a subject, loaded from the given directory.
+        """
+        with open(os.path.join(dirPath, cls._camelName)) as f:
+            s = serializer.load(f.read())
+
+            s.classifier = Classifier.loadFromDir(os.path.join(dirPath, 'classifier'))
+        return s
+
 
     def run(self):
         #randomize image order
@@ -177,5 +207,26 @@ class Subject(object):
         self.fitness = self.successPercentage
 
 
+geneticsRegistry = camel.CamelRegistry()
+serializer = camel.Camel((camel.PYTHON_TYPES, classifier.classifierRegistry,
+                          geneticsRegistry, constants.healthStatusRegistry))
+
+####################### DUMPERS #######################
+
+@geneticsRegistry.dumper(Subject, 'Subject', 1)
+def _dumpSubject(obj):
+    return {
+        'imageDict': obj.imageDict,
+        "isAlive": obj.isAlive,
+        'chunkSize': obj.chunkSize,
+        'outputDir': obj.outputDir,
+    }
+
+
+####################### LOADERS #######################
+
+@geneticsRegistry.loader('Subject', 1)
+def _loadSubject(data, version):
+    return Subject(**data)
 
 

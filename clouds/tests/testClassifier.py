@@ -50,6 +50,10 @@ class testTrainClassifier(unittest.TestCase):
             HealthStatus.GOOD,
         ]
 
+        cls.xorImages = cls.createXors(cls.workspace)
+
+    @staticmethod
+    def createXors(tgt):
         #create test xor images
         xorIn = [
             ((255, 255, 255, 255), HealthStatus.GOOD),
@@ -57,7 +61,7 @@ class testTrainClassifier(unittest.TestCase):
             ((0, 0, 0, 0), HealthStatus.GOOD),
             ((0, 0, 255, 255), HealthStatus.CLOUDY),
         ]
-        cls.xorImages = []
+        xorImages = []
         for ar, expected in xorIn:
             npar = np.array(ar, dtype=np.uint8).reshape(2, 2)
 
@@ -65,9 +69,10 @@ class testTrainClassifier(unittest.TestCase):
 
             #pybrain needs a lot of test input. We'll make 20 of each image
             for i in range(20):
-                path = tempfile.mktemp(suffix=".png", prefix='xor_', dir=cls.workspace)
+                path = tempfile.mktemp(suffix=".png", prefix='xor_', dir=tgt)
                 image.save(path)
-                cls.xorImages.append((path, expected))
+                xorImages.append((path, expected))
+        return xorImages
 
 
     @classmethod
@@ -77,10 +82,11 @@ class testTrainClassifier(unittest.TestCase):
 
     def testXOR(self):
         """
-        Test that classifier can solve the xor problem
+        Test that classifier can solve the xor problem. Only sometimes succeeds.
+        Not enough data? Too few iterations? Bad net spec?
         """
         c = classifier.Classifier(
-            set(list(zip(*self.xorImages))[1]), imageSize=(2, 2), hiddenLayers=(4, ))
+            set(list(zip(*self.xorImages))[1]), imageSize=(2, 2), hiddenLayers=(8, ))
 
         c.train(*list(zip(*self.xorImages)))
 
@@ -120,12 +126,13 @@ class testTrainClassifier(unittest.TestCase):
         self.assertEqual(result, (HealthStatus.GOOD, 0.001))
 
 
-    def testSaveNetwork(self):
+    def testSaveClassifier(self):
         """
         Save a network, make sure it's valid.
         """
         xor = NetworkReader.readFrom(self.storedXor)
-        c = classifier.Classifier([HealthStatus.GOOD], imageSize=(2, 2), hiddenLayers=(8, ))
+        c = classifier.Classifier([HealthStatus.GOOD, HealthStatus.CLOUDY],
+                                  imageSize=(2, 2), hiddenLayers=(8, ))
         c.net = xor
 
         storedPath = os.path.join(self.workspace, 'testNetDir')

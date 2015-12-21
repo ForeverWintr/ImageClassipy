@@ -24,7 +24,7 @@ from clouds import util
 
 class Classifier(object):
     _NET_NAME = 'net.xml'
-    _CLASSIFIER_NAME = 'classifier.yaml'
+    _camelName = 'classifier.yaml'
 
     def __init__(self, possible_statuses, imageSize=(128, 128), hiddenLayers=None,
                  trainMethod=trainers.BackpropTrainer,
@@ -147,7 +147,7 @@ class Classifier(object):
         NetworkWriter.writeToFile(self.net, os.path.join(dirPath, self._NET_NAME))
 
         #save classifier
-        with open(os.path.join(dirPath, self._CLASSIFIER_NAME), 'w') as f:
+        with open(os.path.join(dirPath, self._camelName), 'w') as f:
             f.write(serializer.dump(self))
 
 
@@ -156,7 +156,7 @@ class Classifier(object):
         """
         Return a classifier, loaded from the given directory.
         """
-        with codecs.open(os.path.join(dirPath, cls._CLASSIFIER_NAME), encoding='utf-8') as f:
+        with open(os.path.join(dirPath, cls._camelName)) as f:
             c = serializer.load(f.read())
 
         c.net = NetworkReader.readFrom(os.path.join(dirPath, cls._NET_NAME))
@@ -164,9 +164,7 @@ class Classifier(object):
 
 
 classifierRegistry = camel.CamelRegistry()
-
 serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry, healthStatusRegistry))
-
 
 ####################### DUMPERS #######################
 
