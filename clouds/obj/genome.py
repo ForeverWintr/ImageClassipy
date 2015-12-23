@@ -73,7 +73,7 @@ class HiddenLayers(Gene):
         return self._layers
 
     @staticmethod
-    def randomHiddenLayers(numRange=(0, 10), neuronRange=(1, 1000)):
+    def randomHiddenLayers(numRange=(0, 10), neuronRange=(1, 500)):
         count = _normalRandInt(*numRange)
         return tuple(_normalRandInt(*neuronRange) for c in range(count))
 

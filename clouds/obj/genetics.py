@@ -51,9 +51,15 @@ class Simulation(object):
             name = 'Subject_{}'.format(i)
             subjectDir = os.path.join(self.workingDir, name)
 
-            s = Subject(subjectDir, classifier_=self.createClassifier(), imageDict=self.images)
-            s.dump()
-            log.debug('{} spawned.')
+            if os.path.exists(subjectDir):
+                s = Subject.loadFromDir(subjectDir)
+            else:
+                log.debug("Creating new {}".format(name))
+                s = Subject(subjectDir, classifier_=self.createClassifier(), imageDict=self.images)
+
+            #still dump even if subject already exists, in case format is out of date
+            log.debug('{} spawned. saving...'.format(s))
+            s.save()
             self.subjects.append(s)
 
 
@@ -75,18 +81,14 @@ class Simulation(object):
             datasetMethod=datasetMethod.parameter,
             outclass=outClass.parameter,
         )
-        log.debug("Creating classifier with:")
-        log.debug(pformat(kwargs))
+        log.debug("Creating classifier with:\n{}".format(pformat(kwargs)))
 
         return Classifier(**kwargs)
 
 
-    def simulate(self, logQ, numWorkers=None):
+    def simulate(self, numWorkers=None):
         """
         Train each subject in increments of `epochs` times, and evaluate. Continue until ?
-
-        `logQ` is a queue to which workers can send log messages. Give it to a queuelistener to log
-        them.
         """
         assert self.subjects, "Can't simulate without subjects!"
         if not numWorkers:
@@ -95,6 +97,18 @@ class Simulation(object):
         #If we've only got 1 worker, don't bother with a pool
         if numWorkers <= 1:
             result = [self._runSubject(s.outputDir) for s in self.subjects]
+        else:
+            simPool = multiprocessing.Pool(
+                processes=numWorkers,
+                initializer=self.workerInit, initargs=(self.logQ, )
+            )
+
+    @staticmethod
+    def workerInit(logQ):
+        """
+        Initializer for worker processes.
+        """
+        print(asf)
 
     @staticmethod
     def _runSubject(subjectDir):
@@ -108,7 +122,8 @@ class Simulation(object):
         s.save()
 
     @staticmethod
-    def _createSubject()
+    def _createSubject():
+        raise NotImplemented("TODO")
 
     @staticmethod
     def _getWorkerCount(jobCount):

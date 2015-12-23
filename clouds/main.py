@@ -37,13 +37,11 @@ def main(argv):
     log.debug("Get images")
     images = farmglue.imagesAndStatuses(farmDir)
 
-    sim = genetics.Simulation(WORKINGDIR, 1, images)
-    print(sim.subjects)
-    print(sim.subjects[0].classifier)
+    qListener.start()
+    sim = genetics.Simulation(WORKINGDIR, 2, images, logQ)
     log.debug("Simulating.")
 
-    qListener.start()
-    sim.simulate(logQ)
+    sim.simulate()
     qListener.stop()
 
     sim.summarize()
