@@ -33,10 +33,9 @@ MAX_TRAIN_S = 60 * 60 * 2
 
 class Simulation(object):
 
-    def __init__(self, workingDir, subjectCount, images={}, logQ=None):
+    def __init__(self, workingDir, subjectCount, images={}):
         """
         """
-        self.logQ = logQ
         self.subjects = []
         self.images = images
         self.workingDir = workingDir
@@ -49,23 +48,21 @@ class Simulation(object):
         Create subjects. Load existing subjects from workingDir.
         """
         log.debug("Creating {} Test Subjects".format(subjectCount))
+        dirs = []
         for i in range(subjectCount):
             name = 'Subject_{}'.format(i)
             subjectDir = os.path.join(self.workingDir, name)
 
-            if os.path.exists(subjectDir):
-                s = Subject.loadFromDir(subjectDir)
-            else:
-                log.debug("Creating new {}".format(name))
-                s = Subject(subjectDir, classifier_=self.createClassifier(), imageDict=self.images)
+            dirs.append(subjectDir)
+            #s = self._loadSubject(subjectDir, self.images)
+            #self.subjects.append(s)
 
-            #still dump even if subject already exists, in case format is out of date
-            log.debug('{} spawned. saving...'.format(s))
-            s.save()
-            self.subjects.append(s)
+        r = multiprocess.mapWithLogging(self._loadSubject, dirs, log,
+                                        self._getWorkerCount(len(dirs)), self.images)
+        print(Asf)
 
-
-    def createClassifier(self):
+    @staticmethod
+    def createClassifier(possibleStatuses):
         """
         Create a random classifier.
         """
@@ -76,7 +73,7 @@ class Simulation(object):
         outClass = genome.OutClass()
 
         kwargs = dict(
-            possible_statuses=set(self.images.values()),
+            possible_statuses=possibleStatuses,
             imageSize=imageSize.parameter,
             hiddenLayers=hiddenLayers.parameter,
             trainMethod=trainMethod.parameter,
@@ -100,24 +97,14 @@ class Simulation(object):
         if numWorkers <= 1:
             result = [self._runSubject(s.outputDir) for s in self.subjects]
         else:
-            multiprocess.mapWithLogging(
+            result = multiprocess.mapWithLogging(
                 self._runSubject,
                 [s.outputDir for s in self.subjects],
                 log,
                 numWorkers
             )
-            #simPool = multiprocessing.Pool(
-                #processes=numWorkers,
-                #initializer=self.workerInit, initargs=(self.logQ, )
-            #)
-            print(asfd)
 
-    @staticmethod
-    def workerInit(logQ):
-        """
-        Initializer for worker processes.
-        """
-        print(log.handlers)
+            print(asfd)
 
     @staticmethod
     def _runSubject(subjectDir):
@@ -131,8 +118,26 @@ class Simulation(object):
         s.save()
 
     @staticmethod
-    def _createSubject():
-        raise NotImplemented("TODO")
+    def _loadSubject(subjectDir, imageDict):
+        """
+        Initialize a subject at `subjectDir`. Either creating, or load and save if the subject
+        exists.
+        """
+        name = os.path.basename(subjectDir)
+        if os.path.exists(subjectDir):
+            s = Subject.loadFromDir(subjectDir)
+        else:
+            log.debug("Creating new {}".format(name))
+            s = Subject(
+                subjectDir,
+                classifier_=Simulation.createClassifier(set(imageDict.values())),
+                imageDict=imageDict
+            )
+
+        #still dump even if subject already exists, in case format is out of date
+        log.debug('{} spawned. saving...'.format(s))
+        s.save()
+        return s
 
     @staticmethod
     def _getWorkerCount(jobCount):
