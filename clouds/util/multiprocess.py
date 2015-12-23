@@ -27,21 +27,21 @@ def mapWithLogging(func, iterable, log, workerCount, *args, **kwargs):
 
 
 def _wrapper(item):
-    return FUNC(item, *ARGS, **KWARGS)
+    return _FUNC(item, *_ARGS, **_KWARGS)
 
 
 #global variables for passing to child processes
-ARGS = None
-KWARGS = None
-FUNC = None
+_ARGS = None
+_KWARGS = None
+_FUNC = None
 def _initializer(logQ, loggerName, func, args, kwargs):
     #Set up global variables
-    global ARGS
-    global KWARGS
-    global FUNC
-    ARGS = args
-    KWARGS = kwargs
-    FUNC = func
+    global _ARGS
+    global _KWARGS
+    global _FUNC
+    _ARGS = args
+    _KWARGS = kwargs
+    _FUNC = func
 
     #set up log to use queue. I think we need to remove existing handlers, so we don't try to log
     #to file from multiple processes. I wonder if there's a better way to do this...

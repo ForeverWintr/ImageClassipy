@@ -1,16 +1,10 @@
 import sys
 import logging
 from logging import handlers
-
-# Having these lines here defies PEP8, but we need to get the logger before
-# other packages import it
-logFormat = '%(levelname)s %(asctime)s %(processName)s: %(message)s'
-logging.basicConfig(level=logging.DEBUG, format=logFormat)
-log = logging.getLogger('SimulationLogger')
-
 import datetime
 import os
 import multiprocessing
+import sys
 
 import numpy as np
 
@@ -30,19 +24,16 @@ def main(argv):
     np.seterr('raise')
     farmDir = FARMDIR
 
-
     #logging setup
-    qListener, logQ = loggingSetup()
+    log = loggingSetup()
 
     log.debug("Get images")
     images = farmglue.imagesAndStatuses(farmDir)
 
-    qListener.start()
-    sim = genetics.Simulation(WORKINGDIR, 2, images, logQ)
+    sim = genetics.Simulation(WORKINGDIR, 2, images)
     log.debug("Simulating.")
 
     sim.simulate()
-    qListener.stop()
 
     sim.summarize()
     log.debug("Done")
@@ -50,18 +41,35 @@ def main(argv):
 
 
 def loggingSetup():
-    logQ = multiprocessing.Queue()
+    log = logging.getLogger('SimulationLogger')
+    log.setLevel(logging.DEBUG)
+
+    #this is the top level logger. Don't propagate up to root
+    log.propagate = False
+
+    fmt = ('%(levelname)s %(asctime)s %(processName)s (%(process)d) '
+           '[%(funcName)s (%(filename)s:%(lineno)s)]: %(message)s')
+    fileFormatter = logging.Formatter(fmt)
+
+    fmt = ('%(levelname)s %(processName)s (%(process)d): %(message)s')
+    streamFormatter = logging.Formatter(fmt)
+
+    streamHandler = logging.StreamHandler(sys.stdout)
+    streamHandler.setFormatter(streamFormatter)
+    streamHandler.setLevel(logging.DEBUG)
 
     logFile = os.path.join(
         WORKINGDIR,
         'SimulationLog_{}.txt'.format(datetime.datetime.now().strftime('%Y%m%d_%H-%M-%S')))
     fileHandler = logging.FileHandler(logFile)
-    fileHandler.setFormatter(logging.Formatter(logFormat))
-    log.addHandler(fileHandler)
+    fileHandler.setFormatter(fileFormatter)
+    fileHandler.setLevel(logging.INFO)
 
-    qListener = handlers.QueueListener(logQ, *log.handlers)
-    return qListener, logQ
+    log.addHandler(streamHandler)
+    log.addHandler(fileHandler)
+    return log
 
 
 if __name__ == '__main__':
     main(sys.argv)
+    logging.shutdown()
