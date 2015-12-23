@@ -11,12 +11,9 @@ from pybrain import datasets
 from pybrain.structure import modules
 
 
-SEED = random.randint(0, np.iinfo(np.uint32).max)
-random.seed(SEED)
-np.random.seed(SEED)
 
 class Gene(object, metaclass=abc.ABCMeta):
-    _seed = SEED
+    _seed = None
 
     @property
     @abc.abstractmethod
@@ -92,4 +89,22 @@ def _normalRandInt(a, b):
         selection = np.random.normal(0, stdDev)
     return int(round(abs(selection) + a))
 
+def seed(seed=None):
+    """
+    Seed the random number generators used to generate genes.
+    """
 
+    Gene._seed = seed
+
+    if not Gene._seed:
+        #seed random with its default method
+        random.seed()
+
+        #seed again, keeping the seed for future reference. This has limited utility, because
+        #regenerating the genome from a seed will also require generating it in the original
+        #sequence, but lets try it anyway.
+        Gene._seed = random.randint(0, np.iinfo(np.uint32).max)
+
+    random.seed(Gene._seed)
+    np.random.seed(Gene._seed)
+seed()

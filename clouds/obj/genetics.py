@@ -54,18 +54,19 @@ class Simulation(object):
             subjectDir = os.path.join(self.workingDir, name)
 
             dirs.append(subjectDir)
-            #s = self._loadSubject(subjectDir, self.images)
-            #self.subjects.append(s)
 
-        r = multiprocess.mapWithLogging(self._loadSubject, dirs, log,
-                                        self._getWorkerCount(len(dirs)), self.images)
-        print(Asf)
+        #assigning subjects like this will only work so long as they're picklable
+        self.subjects = multiprocess.mapWithLogging(self._loadSubject, dirs, log,
+                                                    self._getWorkerCount(len(dirs)), self.images)
 
     @staticmethod
     def createClassifier(possibleStatuses):
         """
         Create a random classifier.
         """
+        #child processes inherit the random state of their parents. Re-seed here.
+        genome.seed()
+
         hiddenLayers = genome.HiddenLayers()
         trainMethod = genome.TrainMethod()
         imageSize = genome.ImageSize()
