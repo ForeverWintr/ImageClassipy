@@ -33,3 +33,4 @@ def plotlyHistorgram(data):
         )
     ]
     plot_url = py.plot(d, filename='basic-histogram')
+

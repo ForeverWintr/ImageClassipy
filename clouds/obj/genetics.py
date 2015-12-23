@@ -24,7 +24,7 @@ from clouds.obj import classifier
 from clouds.obj.classifier import Classifier
 from clouds.obj import genome
 from clouds.util import util
-from clouds.util import constants
+from clouds.util import constants, multiprocess
 
 log = logging.getLogger('SimulationLogger')
 
@@ -100,17 +100,24 @@ class Simulation(object):
         if numWorkers <= 1:
             result = [self._runSubject(s.outputDir) for s in self.subjects]
         else:
-            simPool = multiprocessing.Pool(
-                processes=numWorkers,
-                initializer=self.workerInit, initargs=(self.logQ, )
+            multiprocess.mapWithLogging(
+                self._runSubject,
+                [s.outputDir for s in self.subjects],
+                log,
+                numWorkers
             )
+            #simPool = multiprocessing.Pool(
+                #processes=numWorkers,
+                #initializer=self.workerInit, initargs=(self.logQ, )
+            #)
+            print(asfd)
 
     @staticmethod
     def workerInit(logQ):
         """
         Initializer for worker processes.
         """
-        print(asf)
+        print(log.handlers)
 
     @staticmethod
     def _runSubject(subjectDir):
@@ -198,10 +205,10 @@ class Subject(object):
 
         Saves to a temporary directory, then overwrites our existing dir.
         """
-        d = tempfile.TemporaryDirectory(prefix="saving{}".format(self.name))
-        self.dump(dirPath=d.name)
+        d = tempfile.mkdtemp(prefix="saving{}".format(self.name))
+        self.dump(dirPath=d)
         shutil.rmtree(self.outputDir, ignore_errors=True)
-        shutil.move(d.name, self.outputDir)
+        shutil.move(d, self.outputDir)
 
     def dump(self, dirPath=None, overwrite=False):
         """

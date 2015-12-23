@@ -4,7 +4,7 @@ from logging import handlers
 
 # Having these lines here defies PEP8, but we need to get the logger before
 # other packages import it
-logFormat = '%(levelname)s %(asctime)s: %(message)s'
+logFormat = '%(levelname)s %(asctime)s %(processName)s: %(message)s'
 logging.basicConfig(level=logging.DEBUG, format=logFormat)
 log = logging.getLogger('SimulationLogger')
 
