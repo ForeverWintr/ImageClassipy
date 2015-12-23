@@ -1,5 +1,6 @@
 import sys
 import logging
+from logging import handlers
 
 # Having these lines here defies PEP8, but we need to get the logger before
 # other packages import it
@@ -9,6 +10,7 @@ log = logging.getLogger('SimulationLogger')
 
 import datetime
 import os
+import multiprocessing
 
 import numpy as np
 
@@ -16,8 +18,6 @@ from clouds.obj import genetics
 from clouds.util import farmglue
 
 #TODO:
-# str and repr for classifiers
-# Pickle a simulation/classifiers
 # implement logging
 # Subjects are directories. Worker processes
 # Balance input in training
@@ -32,6 +32,28 @@ def main(argv):
 
 
     #logging setup
+    qListener, logQ = loggingSetup()
+
+    log.debug("Get images")
+    images = farmglue.imagesAndStatuses(farmDir)
+
+    sim = genetics.Simulation(WORKINGDIR, 1, images)
+    print(sim.subjects)
+    print(sim.subjects[0].classifier)
+    log.debug("Simulating.")
+
+    qListener.start()
+    sim.simulate(logQ)
+    qListener.stop()
+
+    sim.summarize()
+    log.debug("Done")
+    pass
+
+
+def loggingSetup():
+    logQ = multiprocessing.Queue()
+
     logFile = os.path.join(
         WORKINGDIR,
         'SimulationLog_{}.txt'.format(datetime.datetime.now().strftime('%Y%m%d_%H-%M-%S')))
@@ -39,18 +61,8 @@ def main(argv):
     fileHandler.setFormatter(logging.Formatter(logFormat))
     log.addHandler(fileHandler)
 
-    log.debug("Get images")
-    images = farmglue.imagesAndStatuses(farmDir)
-
-    sim = genetics.Simulation(WORKINGDIR, 100, images)
-    print(sim.subjects)
-    print(sim.subjects[0].classifier)
-    log.debug("Simulating.")
-    sim.simulate()
-
-    sim.summarize()
-    log.debug("Done")
-    pass
+    qListener = handlers.QueueListener(logQ, *log.handlers)
+    return qListener, logQ
 
 
 if __name__ == '__main__':

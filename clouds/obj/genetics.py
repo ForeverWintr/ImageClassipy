@@ -13,6 +13,7 @@ import os
 from collections import defaultdict
 import multiprocessing
 import logging
+from pprint import pformat
 
 import numpy as np
 import camel
@@ -30,9 +31,10 @@ MAX_TRAIN_S = 60 * 60 * 2
 
 class Simulation(object):
 
-    def __init__(self, workingDir, subjectCount, images={}):
+    def __init__(self, workingDir, subjectCount, images={}, logQ=None):
         """
         """
+        self.logQ = logQ
         self.subjects = []
         self.images = images
         self.workingDir = workingDir
@@ -51,6 +53,7 @@ class Simulation(object):
 
             s = Subject(subjectDir, classifier_=self.createClassifier(), imageDict=self.images)
             s.dump()
+            log.debug('{} spawned.')
             self.subjects.append(s)
 
 
@@ -64,7 +67,7 @@ class Simulation(object):
         datasetMethod = genome.DatasetMethod()
         outClass = genome.OutClass()
 
-        return Classifier(
+        kwargs = dict(
             possible_statuses=set(self.images.values()),
             imageSize=imageSize.parameter,
             hiddenLayers=hiddenLayers.parameter,
@@ -72,15 +75,22 @@ class Simulation(object):
             datasetMethod=datasetMethod.parameter,
             outclass=outClass.parameter,
         )
+        log.debug("Creating classifier with:")
+        log.debug(pformat(kwargs))
+
+        return Classifier(**kwargs)
 
 
-    def simulate(self, numWorkers=None):
+    def simulate(self, logQ, numWorkers=None):
         """
         Train each subject in increments of `epochs` times, and evaluate. Continue until ?
+
+        `logQ` is a queue to which workers can send log messages. Give it to a queuelistener to log
+        them.
         """
         assert self.subjects, "Can't simulate without subjects!"
         if not numWorkers:
-            numWorkers = min(multiprocessing.cpu_count() - 1, len(self.subjects))
+            numWorkers = self._getWorkerCount(len(self.subjects))
 
         #If we've only got 1 worker, don't bother with a pool
         if numWorkers <= 1:
@@ -96,6 +106,16 @@ class Simulation(object):
         s = Subject.loadFromDir(subjectDir)
         s.train()
         s.save()
+
+    @staticmethod
+    def _createSubject()
+
+    @staticmethod
+    def _getWorkerCount(jobCount):
+        """
+        Determine how many workers to use.
+        """
+        return min(multiprocessing.cpu_count(), jobCount)
 
     def summarize(self):
         """
