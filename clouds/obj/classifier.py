@@ -161,6 +161,7 @@ class Classifier(object):
         with open(os.path.join(dirPath, cls._camelName)) as f:
             c = serializer.load(f.read())
 
+        log.debug("{}: loading network".format(c))
         c.net = NetworkReader.readFrom(os.path.join(dirPath, cls._NET_NAME))
         return c
 

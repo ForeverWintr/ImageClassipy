@@ -2,8 +2,6 @@ import os
 import errno
 from itertools import zip_longest
 
-import plotly.plotly as py
-import plotly.graph_objs as go
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -25,7 +23,10 @@ def mkdir_p(path):
 def plotlyHistorgram(data):
     """
     Create a plotly histogram of the given data.
+    Plotly is imported within the function, as importing seems to establish a plotly connection.
     """
+    import plotly.plotly as py
+    import plotly.graph_objs as go
     d = [
         go.Histogram(
             x=data
