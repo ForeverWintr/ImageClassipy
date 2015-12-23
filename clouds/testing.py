@@ -7,6 +7,8 @@ import wand.image
 import os
 import multiprocessing
 import camel
+import tempfile
+import shutil
 
 RGB = r'/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-06-16_RE_112814/rgb/rgb.png'
 
@@ -20,9 +22,11 @@ scaleFactor = 0.32
 # training functions
 
 def main():
-    p = multiprocessing.Pool()
-    print(p.map(Test.f, [1, 2, 3, 4, 5, 6, 7, 8]))
-
+    target = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory(prefix='TESTING__') as d:
+        print(d)
+        shutil.move(d, target)
+        print(d)
 
 class Test(object):
     @staticmethod

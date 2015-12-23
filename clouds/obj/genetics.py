@@ -14,6 +14,8 @@ from collections import defaultdict
 import multiprocessing
 import logging
 from pprint import pformat
+import tempfile
+import shutil
 
 import numpy as np
 import camel
@@ -193,8 +195,13 @@ class Subject(object):
     def save(self):
         """
         Save self to our directory. Overwriting old data.
+
+        Saves to a temporary directory, then overwrites our existing dir.
         """
-        self.dump(overwrite=True)
+        d = tempfile.TemporaryDirectory(prefix="saving{}".format(self.name))
+        self.dump(dirPath=d.name)
+        shutil.rmtree(self.outputDir, ignore_errors=True)
+        shutil.move(d.name, self.outputDir)
 
     def dump(self, dirPath=None, overwrite=False):
         """
