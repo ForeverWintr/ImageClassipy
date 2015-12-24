@@ -1,13 +1,14 @@
 import os
 import errno
-from itertools import izip_longest
+from itertools import zip_longest
+
 
 
 def grouper(iterable, n, fillvalue=None):
     "Collect data into fixed-length chunks or blocks"
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
     args = [iter(iterable)] * n
-    return izip_longest(fillvalue=fillvalue, *args)
+    return zip_longest(fillvalue=fillvalue, *args)
 
 
 def mkdir_p(path):
@@ -17,3 +18,19 @@ def mkdir_p(path):
         if exc.errno == errno.EEXIST and os.path.isdir(path):
             pass
         else: raise
+
+
+def plotlyHistorgram(data):
+    """
+    Create a plotly histogram of the given data.
+    Plotly is imported within the function, as importing seems to establish a plotly connection.
+    """
+    import plotly.plotly as py
+    import plotly.graph_objs as go
+    d = [
+        go.Histogram(
+            x=data
+        )
+    ]
+    plot_url = py.plot(d, filename='basic-histogram')
+

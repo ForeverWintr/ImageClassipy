@@ -3,7 +3,7 @@ Glue for interfacing with a farm object
 """
 import os
 import ast
-from constants import HealthStatus
+from .constants import HealthStatus
 
 def imagesAndStatuses(outputDir):
     """
@@ -63,7 +63,7 @@ def _loadControl(controlPath):
         c = ast.literal_eval(f.read())
 
     control = {}
-    for f, v in c.iteritems():
+    for f, v in c.items():
         subdict = {s.pop('name'): s for s in v[1]}
         control[f] = subdict
 
@@ -104,4 +104,4 @@ if __name__ == '__main__':
 
 
 
-    print "done"
+    print("done")

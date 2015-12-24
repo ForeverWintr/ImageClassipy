@@ -4,8 +4,7 @@ A classifier is an entity that evaluates images for status (cloudy, canola, etc.
 import os
 import time
 from operator import mul, itemgetter
-from itertools import izip
-import codecs
+import logging
 from collections import namedtuple
 
 import PIL.Image
@@ -15,22 +14,25 @@ from pybrain.supervised import trainers
 from pybrain import datasets
 from pybrain.datasets import ClassificationDataSet
 from pybrain.tools.customxml import NetworkWriter, NetworkReader
-from pybrain.structure.modules   import SoftmaxLayer
+from pybrain.structure.modules import SoftmaxLayer
 import numpy as np
 import camel
 
-from clouds.util.constants import HealthStatus
+from clouds.util.constants import HealthStatus, healthStatusRegistry
 from clouds import util
+
+
+log = logging.getLogger('SimulationLogger')
 
 
 class Classifier(object):
     _NET_NAME = 'net.xml'
-    _CLASSIFIER_NAME = 'classifier.yaml'
+    _camelName = 'classifier.yaml'
 
     def __init__(self, possible_statuses, imageSize=(128, 128), hiddenLayers=None,
                  trainMethod=trainers.BackpropTrainer,
                  datasetMethod=ClassificationDataSet,
-                 outclass=SoftmaxLayer):
+                 outclass=SoftmaxLayer, convergenceThreshold=10):
         hiddenLayers = hiddenLayers or tuple()
 
         self.possibleStatuses = possible_statuses
@@ -38,10 +40,8 @@ class Classifier(object):
         self.imageSize = tuple(float(x) for x in imageSize)
         self.trainMethod = trainMethod
         self.datasetMethod = datasetMethod
-
-        #self.net = neurolab.net.newff(self.inputSpec, self.netSpec)
         self.net = buildNetwork(*self.netSpec, outclass=outclass)
-
+        self.convergenceThreshold = convergenceThreshold
         #statistics
         self.avgCertainty = None
         self.trainTime = None
@@ -69,7 +69,7 @@ class Classifier(object):
     def train(self, images, statuses):
         numStatuses = len(self.possibleStatuses)
         ds = self.datasetMethod(mul(*self.imageSize), 1, numStatuses)
-        [ds.addSample(self._loadToArray(i), e.value) for i, e in izip(images, statuses)]
+        [ds.addSample(self._loadToArray(i), e.value) for i, e in zip(images, statuses)]
 
         #convert to one output per class. Apparently this is a better format?
         # http://pybrain.org/docs/tutorial/fnn.html
@@ -78,16 +78,17 @@ class Classifier(object):
         trainer = self.trainMethod(self.net, dataset=ds)
 
         start = time.clock()
-        trainErrors, validationErrors = trainer.trainUntilConvergence(convergence_threshold=4)
+        trainErrors, validationErrors = trainer.trainUntilConvergence(
+            convergence_threshold=self.convergenceThreshold)
 
         trainTime = time.clock() - start
 
         iterations = len(trainErrors) + len(validationErrors)
-        print "Training took {} iterations".format(iterations)
+        log.debug("Training took {} iterations".format(iterations))
         if trainErrors:
-            print "Errors: {}, {}".format(trainErrors[-1], validationErrors[-1])
+            log.debug("Errors: {}, {}".format(trainErrors[-1], validationErrors[-1]))
         else:
-            print "Training unsuccesfull. Trainerrors is empty."
+            log.debug("Training unsuccesfull. Trainerrors is empty.")
 
         self.trainTime = float(trainTime) / iterations
         self.error = validationErrors[-1]
@@ -101,7 +102,7 @@ class Classifier(object):
         start = time.clock()
         result = self.net.activate(self._loadToArray(imagePath))
 
-        print "Result is:", result
+        print("Result is:", result)
 
         guess = HealthStatus._value2member_map_[np.argmax(result)]
 
@@ -136,11 +137,11 @@ class Classifier(object):
         #return imageArray
 
 
-    def dump(self, dirPath):
+    def dump(self, dirPath, overwrite):
         """
         Save a representation of this classifier and it's network at the given path.
         """
-        if os.path.isdir(dirPath) and os.listdir(dirPath):
+        if not overwrite and os.path.isdir(dirPath) and os.listdir(dirPath):
             raise IOError("The directory exists and is not empty: {}".format(dirPath))
         util.mkdir_p(dirPath)
 
@@ -148,7 +149,7 @@ class Classifier(object):
         NetworkWriter.writeToFile(self.net, os.path.join(dirPath, self._NET_NAME))
 
         #save classifier
-        with open(os.path.join(dirPath, self._CLASSIFIER_NAME), 'w') as f:
+        with open(os.path.join(dirPath, self._camelName), 'w') as f:
             f.write(serializer.dump(self))
 
 
@@ -157,27 +158,28 @@ class Classifier(object):
         """
         Return a classifier, loaded from the given directory.
         """
-        with codecs.open(os.path.join(dirPath, cls._CLASSIFIER_NAME), encoding='utf-8') as f:
+        with open(os.path.join(dirPath, cls._camelName)) as f:
             c = serializer.load(f.read())
 
+        log.debug("{}: loading network".format(c))
         c.net = NetworkReader.readFrom(os.path.join(dirPath, cls._NET_NAME))
         return c
 
 
 classifierRegistry = camel.CamelRegistry()
-
-serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry))
-
+serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry, healthStatusRegistry))
 
 ####################### DUMPERS #######################
 
 @classifierRegistry.dumper(Classifier, 'Classifier', 1)
 def _dumpClassifier(obj):
     return {
-        u"imageSize": obj.imageSize,
-        u'netSpec': obj.netSpec[1:],
-        u'trainMethodName': unicode(obj.trainMethod.__name__),
-        u'datasetMethodName': unicode(obj.datasetMethod.__name__),
+        'possible_statuses': obj.possibleStatuses,
+        "imageSize": obj.imageSize,
+        'hiddenLayers': obj.netSpec[1:-1],
+        'trainMethodName': str(obj.trainMethod.__name__),
+        'datasetMethodName': str(obj.datasetMethod.__name__),
+        'convergenceThreshold': obj.convergenceThreshold,
     }
 
 

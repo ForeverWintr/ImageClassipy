@@ -5,7 +5,10 @@ import neurolab
 import PIL
 import wand.image
 import os
+import multiprocessing
 import camel
+import tempfile
+import shutil
 
 RGB = r'/Users/tomrutherford/Dropbox/Code/Wing/clouds/healthSegments/2015-06-16_RE_112814/rgb/rgb.png'
 
@@ -19,8 +22,16 @@ scaleFactor = 0.32
 # training functions
 
 def main():
+    target = tempfile.mkdtemp()
+    with tempfile.TemporaryDirectory(prefix='TESTING__') as d:
+        print(d)
+        shutil.move(d, target)
+        print(d)
 
-
+class Test(object):
+    @staticmethod
+    def f(x):
+        return 1
 
 def loadingExperiments():
     #image = misc.imread(RGB)
@@ -36,10 +47,10 @@ def loadingExperiments():
     shapedImage = image.reshape(1, image.size)
     shapedTarget = np.zeros([1, 1])
 
-    print "Training"
+    print ("Training")
     net.train(shapedImage, shapedTarget, epochs=1, show=1)
 
-    print "Done"
+    print ("Done")
     pass
 
 
