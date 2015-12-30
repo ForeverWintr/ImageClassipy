@@ -5,11 +5,15 @@ import datetime
 import os
 import multiprocessing
 import sys
+import glob
+import re
 
 import numpy as np
 
 from clouds.obj import genetics
 from clouds.util import farmglue
+from clouds.util import constants
+from clouds import util
 
 #TODO:
 # implement logging
@@ -17,6 +21,7 @@ from clouds.util import farmglue
 # Balance input in training
 
 FARMDIR = r'/Users/tomrutherford/Documents/Hervalense'
+IMAGEDIR = r'/Users/tomrutherford/Documents/Data/CHImages'
 WORKINGDIR = '/Users/tomrutherford/Documents/Data/clouds'
 
 def main(argv):
@@ -29,6 +34,7 @@ def main(argv):
 
     log.debug("Get images")
     images = farmglue.imagesAndStatuses(farmDir)
+    images.update(imagesFrom(IMAGEDIR))
 
     sim = genetics.Simulation(WORKINGDIR, 2, images)
     log.debug("Simulating.")
@@ -38,6 +44,25 @@ def main(argv):
     sim.summarize()
     log.debug("Done")
     pass
+
+
+def imagesFrom(dir_):
+    extensions = ('tif', 'tiff', 'png')
+    images = {}
+    for p in util.flatten(glob.glob(os.path.join(dir_, '**', '*.{}'.format(e)), recursive=True)
+              for e in extensions):
+        status = getStatusFromName(os.path.basename(p))
+        images[p] = status
+    return images
+
+
+def getStatusFromName(name):
+    matcher = re.compile('^({})_'.format('|'.join(constants.HealthStatus._member_names_)))
+    match = matcher.match(name)
+    if not match:
+        return ''
+
+    return constants.HealthStatus._member_map_[match.groups()[0]]
 
 
 def loggingSetup():

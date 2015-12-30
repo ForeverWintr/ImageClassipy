@@ -1,6 +1,6 @@
 import os
 import errno
-from itertools import zip_longest
+from itertools import zip_longest, chain
 
 
 
@@ -34,3 +34,6 @@ def plotlyHistorgram(data):
     ]
     plot_url = py.plot(d, filename='basic-histogram')
 
+
+def flatten(iterable):
+    return chain.from_iterable(iterable)
