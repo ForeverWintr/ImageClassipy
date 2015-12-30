@@ -36,7 +36,17 @@ def main(argv):
     images = farmglue.imagesAndStatuses(farmDir)
     images.update(imagesFrom(IMAGEDIR))
 
-    sim = genetics.Simulation(WORKINGDIR, 2, images)
+    sim = genetics.Arena(WORKINGDIR, images)
+
+    #manual subject creation
+    sim.createSubject(
+        'Manual_0',
+        possibleStatuses=set(images.values()),
+        imageSize=(128, 128),
+        hiddenLayers=None,
+    )
+
+    sim.spawnSubjects(2, ['Manual_0'])
     log.debug("Simulating.")
 
     sim.simulate()

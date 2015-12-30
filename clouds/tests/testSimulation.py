@@ -6,7 +6,7 @@ import mock
 
 import numpy as np
 
-from clouds.obj.genetics import Subject, Simulation
+from clouds.obj.genetics import Subject, Arena
 from clouds.obj.classifier import Classifier
 from clouds.tests.testClassifier import testTrainClassifier
 
@@ -36,8 +36,8 @@ class testSimulation(unittest.TestCase):
 
         #Use mock to replace the long running method createClassifier with one that just returns
         #our xor classifier.
-        with mock.patch.object(Simulation, 'createClassifier', return_value=c) as m:
-            sim = Simulation(workingDir=os.path.join(self.workspace, 'sim'), subjectCount=1,
+        with mock.patch.object(Arena, 'createClassifier', return_value=c) as m:
+            sim = Arena(workingDir=os.path.join(self.workspace, 'sim'), subjectCount=1,
                              images=self.xors)
 
         sim.simulate(numWorkers=1)

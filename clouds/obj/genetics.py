@@ -31,36 +31,41 @@ log = logging.getLogger('SimulationLogger')
 MAX_TRAIN_S = 60 * 60 * 2
 
 
-class Simulation(object):
+class Arena(object):
 
-    def __init__(self, workingDir, subjectCount, images={}):
+    def __init__(self, workingDir, images={}):
         """
         """
         self.subjects = []
         self.images = images
         self.workingDir = workingDir
 
-        #self.loadExistingSubjects(workingDir)
-        self.createSubjects(subjectCount)
+    def spawnSubjects(self, subjectCount=None, subjectNames=[]):
+        """
+        Load existing subjects from workingDir. Create new subjects. Optionally, specify a number
+        of subjects, and/or a list of subject names. If subjectCount is specified, we'll load that
+        many subjects, starting with those named in subjectNames.
+        """
+        if subjectCount is None:
+            subjectCount = len(subjectNames)
 
-    def createSubjects(self, subjectCount):
-        """
-        Create subjects. Load existing subjects from workingDir.
-        """
-        log.debug("Creating {} Test Subjects".format(subjectCount))
+        log.debug("Spawning {} Test Subjects".format(subjectCount))
         dirs = []
+        nameIter = iter(subjectNames)
         for i in range(subjectCount):
-            name = 'Subject_{}'.format(i)
+            name = next(nameIter, 'Subject_{}'.format(i-len(subjectNames)))
             subjectDir = os.path.join(self.workingDir, name)
 
             dirs.append(subjectDir)
 
-        #assigning subjects like this will only work so long as they're picklable
-        self.subjects = multiprocess.mapWithLogging(self._loadSubject, dirs, log,
-                                                    self._getWorkerCount(len(dirs)), self.images)
+        if dirs:
+            #assigning subjects like this will only work so long as they're picklable
+            self.subjects = multiprocess.mapWithLogging(self._loadSubject, dirs, log,
+                                                        self._getWorkerCount(len(dirs)),
+                                                        self.images)
 
     @staticmethod
-    def createClassifier(possibleStatuses):
+    def randomClassifier(possibleStatuses):
         """
         Create a random classifier.
         """
@@ -107,6 +112,26 @@ class Simulation(object):
 
             print(asfd)
 
+
+    def createSubject(self, name, **kwargs):
+        """
+        Create a subject using the given arguments. This allows for manual subject injection into
+        the arena. See classifier definition for a list of possible kwargs. Use spawnSubjects to
+        create random subjects.
+        """
+        subjectDir = os.path.join(self.workingDir, name)
+
+        c = Classifier(**kwargs)
+        s = Subject(
+            subjectDir,
+            classifier_=c,
+            imageDict=self.images
+        )
+        s.save()
+        self.subjects.append(s)
+        return s
+
+
     @staticmethod
     def _runSubject(subjectDir):
         """
@@ -131,7 +156,7 @@ class Simulation(object):
             log.debug("Creating new {}".format(name))
             s = Subject(
                 subjectDir,
-                classifier_=Simulation.createClassifier(set(imageDict.values())),
+                classifier_=Arena.randomClassifier(set(imageDict.values())),
                 imageDict=imageDict
             )
 
