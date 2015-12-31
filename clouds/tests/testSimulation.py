@@ -36,10 +36,11 @@ class testSimulation(unittest.TestCase):
 
         #Use mock to replace the long running method createClassifier with one that just returns
         #our xor classifier.
-        with mock.patch.object(Arena, 'createClassifier', return_value=c) as m:
-            sim = Arena(workingDir=os.path.join(self.workspace, 'sim'), subjectCount=1,
+        with mock.patch.object(Arena, 'randomClassifier', return_value=c) as m:
+            sim = Arena(workingDir=os.path.join(self.workspace, 'sim'),
                              images=self.xors)
+            sim.spawnSubjects(1)
 
         sim.simulate(numWorkers=1)
-        print(asdf)
+        self.assertAlmostEqual(sim.subjects[0].fitness, 100)
 

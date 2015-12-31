@@ -110,6 +110,9 @@ class Arena(object):
                 numWorkers
             )
 
+        #update our local objects' fitness
+        for s, r in zip(self.subjects, result):
+            s.fitness = r
 
     def createSubject(self, name, **kwargs):
         """
@@ -141,6 +144,7 @@ class Arena(object):
         s.train()
         s.evaluateFitness()
         s.save()
+        return s.fitness
 
     @staticmethod
     def _loadSubject(subjectDir, imageDict):
@@ -288,13 +292,13 @@ class Subject(object):
         selection of training data.
         """
         images = [x for st in list(self.statuses.keys()) for
-                        x in random.sample(self.statuses[st], tests)]
-        statuses = [self.imageDict[k] for k in evaluateKeys]
+                  x in random.sample(self.statuses[st].keys(), tests)]
+        statuses = [self.imageDict[k] for k in images]
 
         correct = [self.classifier.classify(i)[0] == s for i, s in zip(images, statuses)]
 
         self.successPercentage = np.mean(correct) * 100
-        self.runtimes.append(self.classifier.avgClassifyTime)
+        self.runtimes.append(self.classifier.trainTime)
 
         #TODO: incorporate runtimes
         self.fitness = self.successPercentage
@@ -313,7 +317,7 @@ def _dumpSubject(obj):
         "isAlive": obj.isAlive,
         'chunkSize': obj.chunkSize,
         'outputDir': obj.outputDir,
-        'fitness': obj.fitness,
+        'fitness': float(obj.fitness),
     }
 
 

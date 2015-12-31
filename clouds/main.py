@@ -26,11 +26,13 @@ WORKINGDIR = '/Users/tomrutherford/Documents/Data/clouds'
 
 def main(argv):
 
-    np.seterr('raise', under='warn')
     farmDir = FARMDIR
 
     #logging setup
     log = loggingSetup()
+
+    np.seterrcall(log)
+    np.seterr('raise', under='log')
 
     #convert to png
     tifToPng(IMAGEDIR)
