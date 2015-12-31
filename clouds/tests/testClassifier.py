@@ -136,7 +136,7 @@ class testTrainClassifier(unittest.TestCase):
         c.net = xor
 
         storedPath = os.path.join(self.workspace, 'testNetDir')
-        c.dump(storedPath)
+        c.dump(storedPath, overwrite=False)
 
         newC = classifier.Classifier.loadFromDir(storedPath)
 
