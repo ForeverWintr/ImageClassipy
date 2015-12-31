@@ -26,7 +26,7 @@ WORKINGDIR = '/Users/tomrutherford/Documents/Data/clouds'
 
 def main(argv):
 
-    np.seterr('raise')
+    np.seterr('raise', under='warn')
     farmDir = FARMDIR
 
     #logging setup

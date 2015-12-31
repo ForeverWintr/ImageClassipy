@@ -110,8 +110,6 @@ class Arena(object):
                 numWorkers
             )
 
-            print(asfd)
-
 
     def createSubject(self, name, **kwargs):
         """
@@ -141,6 +139,7 @@ class Arena(object):
         """
         s = Subject.loadFromDir(subjectDir)
         s.train()
+        s.evaluateFitness()
         s.save()
 
     @staticmethod
@@ -185,7 +184,8 @@ class Arena(object):
 class Subject(object):
     _camelName = 'subject.yaml'
 
-    def __init__(self, outputDir, classifier_=None, imageDict={}, chunkSize=10, isAlive=True):
+    def __init__(self, outputDir, classifier_=None, imageDict={}, chunkSize=10, isAlive=True,
+                 fitness=0):
         """
         A container for a single classifier.
         """
@@ -201,7 +201,7 @@ class Subject(object):
         self.imagesTrainedOn = 0
 
         self.successPercentage = None
-        self.fitness = 0
+        self.fitness = fitness
 
         #set to false if this classifier is rejected (e.g., it has an error
         #which causes it to crash)
@@ -266,27 +266,6 @@ class Subject(object):
             s.classifier = Classifier.loadFromDir(os.path.join(dirPath, 'classifier'))
         return s
 
-
-    def run(self):
-        #randomize image order
-        keyOrder = list(self.imageDict.keys())
-        random.shuffle(keyOrder)
-
-        #pass in a chunk of randomly selected images, then evaluate runtime
-        for keys in util.grouper(keyOrder, self.chunkSize):
-            self.train(keys, [self.imageDict[k] for k in keys])
-
-            #if it takes too long to train this network, it dies.
-            if self.runtimes[-1] > MAX_TRAIN_S:
-                continue
-
-        #now evaluate fitness after training.
-        #choose 5 of each status randomly to evaluate
-        evaluateKeys = [x for st in list(self.statuses.keys()) for
-                        x in random.sample(self.statuses[st], 5)]
-        self.evaluateFitness(evaluateKeys, [self.imageDict[k] for k in evaluateKeys])
-
-
     def train(self, maxEpochs=1000):
         """
         Train our classifier by feeding it images and statuses.
@@ -303,11 +282,15 @@ class Subject(object):
             self.imagesTrainedOn += len(self.imageDict)
             self.runtimes.append(self.classifier.trainTime)
 
-    def evaluateFitness(self, images, statuses):
+    def evaluateFitness(self, tests=5):
         """
-        Calculate the performance of our classifier. Test it against the
-        images and statuses given.
+        Calculate the performance of our classifier. Test it 'tests' times against a random
+        selection of training data.
         """
+        images = [x for st in list(self.statuses.keys()) for
+                        x in random.sample(self.statuses[st], tests)]
+        statuses = [self.imageDict[k] for k in evaluateKeys]
+
         correct = [self.classifier.classify(i)[0] == s for i, s in zip(images, statuses)]
 
         self.successPercentage = np.mean(correct) * 100
@@ -330,6 +313,7 @@ def _dumpSubject(obj):
         "isAlive": obj.isAlive,
         'chunkSize': obj.chunkSize,
         'outputDir': obj.outputDir,
+        'fitness': obj.fitness,
     }
 
 
