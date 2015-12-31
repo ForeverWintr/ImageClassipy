@@ -12,7 +12,7 @@ from clouds.tests.testClassifier import testTrainClassifier
 
 TESTDATA = './data'
 
-class testSimulation(unittest.TestCase):
+class testArena(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
