@@ -32,9 +32,12 @@ def main(argv):
     #logging setup
     log = loggingSetup()
 
+    #convert to png
+    tifToPng(IMAGEDIR)
+
     log.debug("Get images")
     images = farmglue.imagesAndStatuses(farmDir)
-    images.update(imagesFrom(IMAGEDIR))
+    images.update(imagesFrom(IMAGEDIR, extensions=('png', )))
 
     sim = genetics.Arena(WORKINGDIR, images)
 
@@ -46,23 +49,32 @@ def main(argv):
         hiddenLayers=None,
     )
 
-    sim.spawnSubjects(2, ['Manual_0'])
+    sim.spawnSubjects(1, ['Manual_0'])
     log.debug("Simulating.")
 
     sim.simulate()
 
     sim.summarize()
     log.debug("Done")
-    pass
 
 
-def imagesFrom(dir_):
-    extensions = ('tif', 'tiff', 'png')
+def tifToPng(dir_):
+    """
+    Convert all tiffs in the directory to pngs. Recursive.
+    """
+    for t in glob.iglob(os.path.join(dir_, '**', '.*tif'), recursive=True):
+        png = os.path.splitext(t)[0] + '.png'
+        wand.image.Image(filename=t).convert('PNG').save(filename=png)
+        #image = PIL.Image.open(png)
+
+
+def imagesFrom(dir_, extensions=('tif', 'tiff', 'png')):
     images = {}
     for p in util.flatten(glob.glob(os.path.join(dir_, '**', '*.{}'.format(e)), recursive=True)
               for e in extensions):
         status = getStatusFromName(os.path.basename(p))
         images[p] = status
+
     return images
 
 

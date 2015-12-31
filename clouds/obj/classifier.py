@@ -186,7 +186,7 @@ def _dumpClassifier(obj):
 
 ####################### LOADERS #######################
 
-@classifierRegistry.loader('Classifier', 2)
+@classifierRegistry.loader('Classifier', all)
 def _loadClassifier(data, version):
     if version == 1:
         data['possibleStatuses'] = data.pop('possible_statuses')
