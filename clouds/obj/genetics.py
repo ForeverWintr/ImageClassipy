@@ -16,6 +16,7 @@ import logging
 from pprint import pformat
 import tempfile
 import shutil
+from contextlib import contextmanager
 
 import numpy as np
 import camel
@@ -140,10 +141,10 @@ class Arena(object):
         loaded from a directory in order to work around multiprocessing's inability to pickle non
         static class methods.
         """
-        s = Subject.loadFromDir(subjectDir)
-        s.train()
-        s.evaluateFitness()
-        s.save()
+        with Subject.workon(subjectDir) as s:
+            s.train()
+            s.evaluateFitness()
+
         return s.fitness
 
     @staticmethod
@@ -269,6 +270,20 @@ class Subject(object):
 
             s.classifier = Classifier.loadFromDir(os.path.join(dirPath, 'classifier'))
         return s
+
+
+    @classmethod
+    @contextmanager
+    def workon(cls, dirPath):
+        """
+        A context manager that will return a subject from the given directory, then save the
+        subject on exit.
+        """
+        s = cls.loadFromDir(dirPath)
+        try:
+            yield s
+        finally:
+            s.save()
 
     def train(self, maxEpochs=1000):
         """
