@@ -3,7 +3,7 @@ Glue for interfacing with a farm object
 """
 import os
 import ast
-from .constants import HealthStatus
+from constants import HealthStatus
 
 def imagesAndStatuses(outputDir):
     """
@@ -12,6 +12,8 @@ def imagesAndStatuses(outputDir):
     controlPath = os.path.join(outputDir, 'controls', 'HealthImageryControl.txt')
     fieldsPath = os.path.join(outputDir, 'fields')
 
+    if not os.path.exists(controlPath):
+        return {}
     control = _loadControl(controlPath)
 
     images = {}
@@ -74,11 +76,14 @@ def _dirs(directory):
     """
     Return directories in the given one.
     """
-    return (os.path.join(directory, x) for x in next(os.walk(directory))[1])
-
+    try:
+        return (os.path.join(directory, x) for x in next(os.walk(directory))[1])
+    except StopIteration:
+        return ()
 
 if __name__ == '__main__':
-    path = r'\\ADA\AutoCropHealth'
+    #path = r'\\FEPC-T54\AutoCropHealth'
+    path = r'C:\HealthReport'
     extractTo = r'D:\Scratch\CHImages'
 
     from elvyra.workflows.automation.crophealth import getExtantFarms
