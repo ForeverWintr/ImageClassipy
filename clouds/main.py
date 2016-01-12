@@ -44,14 +44,15 @@ def main(argv):
     sim = genetics.Arena(WORKINGDIR, images)
 
     #manual subject creation
-    #sim.createSubject(
-        #'Manual_0',
-        #possibleStatuses=set(images.values()),
-        #imageSize=(128, 128),
-        #hiddenLayers=None,
-    #)
+    sim.createSubject(
+        'imgMode_RGB',
+        possibleStatuses=set(images.values()),
+        imageSize=(128, 128),
+        hiddenLayers=None,
+        imageMode='RGB'
+    )
 
-    sim.spawnSubjects(1, ['Manual_0'])
+    sim.spawnSubjects(1, ['imgMode_RGB'])
     log.debug("Simulating.")
 
     sim.simulate()

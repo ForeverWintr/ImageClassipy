@@ -1,6 +1,7 @@
 import os
 import errno
 from itertools import zip_longest, chain
+import numpy as np
 
 
 
@@ -37,3 +38,12 @@ def plotlyHistorgram(data):
 
 def flatten(iterable):
     return chain.from_iterable(iterable)
+
+
+def rgbToHex(array):
+    """
+    Convert an RGB array to hex values.
+    http://stackoverflow.com/a/26227165/1286571
+    """
+    array = np.asarray(array, dtype='uint32')
+    return ((array[:, :, 0]<<16) + (array[:, :, 1]<<8) + array[:, :, 2])

@@ -32,7 +32,8 @@ class Classifier(object):
     def __init__(self, possibleStatuses, imageSize=(128, 128), hiddenLayers=None,
                  trainMethod=trainers.BackpropTrainer,
                  datasetMethod=ClassificationDataSet,
-                 outclass=SoftmaxLayer, convergenceThreshold=10):
+                 outclass=SoftmaxLayer, convergenceThreshold=10,
+                 imageMode='L'):
         hiddenLayers = hiddenLayers or tuple()
 
         self.possibleStatuses = possibleStatuses
@@ -42,6 +43,8 @@ class Classifier(object):
         self.datasetMethod = datasetMethod
         self.net = buildNetwork(*self.netSpec, outclass=outclass)
         self.convergenceThreshold = convergenceThreshold
+        self.imageMode = imageMode
+
         #statistics
         self.avgCertainty = None
         self.trainTime = None
@@ -127,15 +130,18 @@ class Classifier(object):
         newSize = tuple(round(x * s) for x, s in zip(image.size, scaleFactor))
         image.thumbnail(newSize)
 
-        #greyscale
-        image = image.convert('L')
+        image = image.convert(self.imageMode)
 
-        # neurolab seems to expect 1d input, so rescale the images in the
-        # input array as linear (the network does't know about shape anyway)
+        # rescale the images in the input array as linear (the network does't know about shape
+        # anyway)
         imageArray = np.array(image)
+
+        #if we're using rgb mode, convert pixels to 32 bit hex colours
+        if self.imageMode.upper() == 'RGB':
+            imageArray = util.rgbToHex(imageArray)
+
         newSize = mul(*imageArray.shape)
         return imageArray.reshape(newSize)
-        #return imageArray
 
 
     def dump(self, dirPath, overwrite):
@@ -181,6 +187,7 @@ def _dumpClassifier(obj):
         'trainMethodName': str(obj.trainMethod.__name__),
         'datasetMethodName': str(obj.datasetMethod.__name__),
         'convergenceThreshold': obj.convergenceThreshold,
+        'imageMode': obj.imageMode,
     }
 
 

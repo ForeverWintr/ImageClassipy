@@ -78,6 +78,7 @@ class Arena(object):
         imageSize = genome.ImageSize()
         datasetMethod = genome.DatasetMethod()
         outClass = genome.OutClass()
+        imageMode = genome.ImageMode()
 
         kwargs = dict(
             possibleStatuses=possibleStatuses,
@@ -86,6 +87,7 @@ class Arena(object):
             trainMethod=trainMethod.parameter,
             datasetMethod=datasetMethod.parameter,
             outclass=outClass.parameter,
+            imageMode=imageMode.parameter,
         )
         log.debug("Creating classifier with:\n{}".format(pformat(kwargs)))
 
@@ -143,7 +145,7 @@ class Arena(object):
         """
         with Subject.workon(subjectDir) as s:
             log.info('{} Loaded. Training'.format(s))
-            #s.train()
+            s.train()
             log.info('{} Training complete'.format(s))
             s.evaluateFitness()
             log.info('{} Fitness is {}'.format(s, s.fitness))
