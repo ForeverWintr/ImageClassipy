@@ -6,7 +6,8 @@ import mock
 
 import numpy as np
 
-from clouds.obj.genetics import Subject, Arena
+from clouds.obj.subject import Subject
+from clouds.obj.arena import Arena
 from clouds.obj.classifier import Classifier
 from clouds.tests.testClassifier import testTrainClassifier
 
