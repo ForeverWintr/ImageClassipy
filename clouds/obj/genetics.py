@@ -34,12 +34,13 @@ MAX_TRAIN_S = 60 * 60 * 2
 
 class Arena(object):
 
-    def __init__(self, workingDir, images={}):
+    def __init__(self, workingDir, images={}, maxWorkers=multiprocessing.cpu_count()):
         """
         """
         self.subjects = []
         self.images = images
         self.workingDir = workingDir
+        self.maxWorkers = maxWorkers
 
     def spawnSubjects(self, subjectCount=None, subjectNames=[]):
         """
@@ -174,12 +175,12 @@ class Arena(object):
         s.save()
         return s
 
-    @staticmethod
-    def _getWorkerCount(jobCount):
+
+    def _getWorkerCount(self, jobCount):
         """
         Determine how many workers to use.
         """
-        return min(multiprocessing.cpu_count(), jobCount)
+        return min(self.maxWorkers, jobCount)
 
     def summarize(self):
         """
