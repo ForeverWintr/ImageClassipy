@@ -7,6 +7,7 @@ import logging
 
 from clouds.util import multiprocess
 from clouds.obj.subject import Subject
+from clouds.obj.classifier import Classifier
 
 log = logging.getLogger('SimulationLogger')
 

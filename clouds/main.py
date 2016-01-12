@@ -10,7 +10,7 @@ import re
 
 import numpy as np
 
-from clouds.obj import genetics
+from clouds.obj import arena
 from clouds.util import farmglue
 from clouds.util import constants
 from clouds import util
@@ -41,7 +41,7 @@ def main(argv):
     images = farmglue.imagesAndStatuses(farmDir)
     images.update(imagesFrom(IMAGEDIR, extensions=('png', )))
 
-    sim = genetics.Arena(WORKINGDIR, images)
+    sim = arena.Arena(WORKINGDIR, images)
 
     #manual subject creation
     sim.createSubject(
@@ -52,7 +52,7 @@ def main(argv):
         imageMode='RGB'
     )
 
-    sim.spawnSubjects(1, ['imgMode_RGB'])
+    sim.spawnSubjects(5, ['imgMode_RGB', 'imgMode_I'])
     log.debug("Simulating.")
 
     sim.simulate()
