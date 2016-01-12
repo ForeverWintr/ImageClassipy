@@ -83,7 +83,7 @@ def _dirs(directory):
 
 if __name__ == '__main__':
     #path = r'\\FEPC-T54\AutoCropHealth'
-    path = r'C:\HealthReport'
+    path = r'D:\AutoHealth'
     extractTo = r'D:\Scratch\CHImages'
 
     from elvyra.workflows.automation.crophealth import getExtantFarms
