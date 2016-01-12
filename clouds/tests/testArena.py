@@ -9,7 +9,7 @@ import numpy as np
 from clouds.obj.subject import Subject
 from clouds.obj.arena import Arena
 from clouds.obj.classifier import Classifier
-from clouds.tests.testClassifier import testTrainClassifier
+from clouds.tests import util
 
 TESTDATA = './data'
 
@@ -22,7 +22,7 @@ class testArena(unittest.TestCase):
         cls.storedClassifier = os.path.join(cls.workspace, 'sc')
         shutil.copytree(os.path.join(TESTDATA, 'xorClassifier'), cls.storedClassifier)
 
-        cls.xors = {x[0]: x[1] for x in testTrainClassifier.createXors(cls.workspace)}
+        cls.xors = {x[0]: x[1] for x in util.createXors(cls.workspace)}
 
     @classmethod
     def tearDownClass(cls):
