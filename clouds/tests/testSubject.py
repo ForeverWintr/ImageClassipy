@@ -5,10 +5,9 @@ import os
 
 import numpy as np
 
-from clouds.obj.genetics import Subject
+from clouds.obj.subject import Subject
 from clouds.obj.classifier import Classifier
-from clouds.tests.testClassifier import testTrainClassifier
-
+from clouds.tests import util
 TESTDATA = './data'
 
 class testSubject(unittest.TestCase):
@@ -20,7 +19,7 @@ class testSubject(unittest.TestCase):
         cls.storedClassifier = os.path.join(cls.workspace, 'sc')
         shutil.copytree(os.path.join(TESTDATA, 'xorClassifier'), cls.storedClassifier)
 
-        cls.xors = testTrainClassifier.createXors(cls.workspace)
+        cls.xors = util.createXors(cls.workspace)
 
     @classmethod
     def tearDownClass(cls):
@@ -44,4 +43,6 @@ class testSubject(unittest.TestCase):
         #assert that the xor still works
         for img, status in self.xors:
             self.assertEqual(loaded.classifier.classify(img)[0], status)
+
+        print('Done')
 

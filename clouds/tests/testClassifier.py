@@ -12,6 +12,7 @@ import camel
 
 from clouds.util.constants import HealthStatus
 from clouds.obj import classifier
+from clouds.tests import util
 
 TESTDATA = './data'
 XOR = os.path.join(TESTDATA, 'xor.xml')
@@ -50,29 +51,7 @@ class testTrainClassifier(unittest.TestCase):
             HealthStatus.GOOD,
         ]
 
-        cls.xorImages = cls.createXors(cls.workspace)
-
-    @staticmethod
-    def createXors(tgt):
-        #create test xor images
-        xorIn = [
-            ((255, 255, 255, 255), HealthStatus.GOOD),
-            ((255, 255, 0, 0), HealthStatus.CLOUDY),
-            ((0, 0, 0, 0), HealthStatus.GOOD),
-            ((0, 0, 255, 255), HealthStatus.CLOUDY),
-        ]
-        xorImages = []
-        for ar, expected in xorIn:
-            npar = np.array(ar, dtype=np.uint8).reshape(2, 2)
-
-            image = PIL.Image.fromarray(npar)
-
-            #pybrain needs a lot of test input. We'll make 20 of each image
-            for i in range(20):
-                path = tempfile.mktemp(suffix=".png", prefix='xor_', dir=tgt)
-                image.save(path)
-                xorImages.append((path, expected))
-        return xorImages
+        cls.xorImages = util.createXors(cls.workspace)
 
 
     @classmethod
@@ -86,7 +65,9 @@ class testTrainClassifier(unittest.TestCase):
         Not enough data? Too few iterations? Bad net spec?
         """
         c = classifier.Classifier(
-            set(list(zip(*self.xorImages))[1]), imageSize=(2, 2), hiddenLayers=(8, ))
+            set(list(zip(*self.xorImages))[1]), imageSize=(2, 2), hiddenLayers=(8, ),
+            convergenceThreshold=4
+        )
 
         c.train(*list(zip(*self.xorImages)))
 
@@ -136,7 +117,7 @@ class testTrainClassifier(unittest.TestCase):
         c.net = xor
 
         storedPath = os.path.join(self.workspace, 'testNetDir')
-        c.dump(storedPath)
+        c.dump(storedPath, overwrite=False)
 
         newC = classifier.Classifier.loadFromDir(storedPath)
 

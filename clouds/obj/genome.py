@@ -20,7 +20,6 @@ class Gene(object, metaclass=abc.ABCMeta):
     def parameter(self):
         pass
 
-
 class DatasetMethod(Gene):
     def __init__(self):
         self._dataset = datasets.ClassificationDataSet
@@ -73,6 +72,16 @@ class HiddenLayers(Gene):
     def randomHiddenLayers(numRange=(0, 10), neuronRange=(1, 500)):
         count = _normalRandInt(*numRange)
         return tuple(_normalRandInt(*neuronRange) for c in range(count))
+
+
+class ImageMode(Gene):
+    _modes = ('I', 'F', 'L', 'RGB')
+    def __init__(self):
+        self._parameter = random.choice(self._modes)
+
+    @property
+    def parameter(self):
+        return self._parameter
 
 
 def _normalRandInt(a, b):

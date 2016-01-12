@@ -6,13 +6,14 @@ import mock
 
 import numpy as np
 
-from clouds.obj.genetics import Subject, Simulation
+from clouds.obj.subject import Subject
+from clouds.obj.arena import Arena
 from clouds.obj.classifier import Classifier
-from clouds.tests.testClassifier import testTrainClassifier
+from clouds.tests import util
 
 TESTDATA = './data'
 
-class testSimulation(unittest.TestCase):
+class testArena(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -21,7 +22,7 @@ class testSimulation(unittest.TestCase):
         cls.storedClassifier = os.path.join(cls.workspace, 'sc')
         shutil.copytree(os.path.join(TESTDATA, 'xorClassifier'), cls.storedClassifier)
 
-        cls.xors = {x[0]: x[1] for x in testTrainClassifier.createXors(cls.workspace)}
+        cls.xors = {x[0]: x[1] for x in util.createXors(cls.workspace)}
 
     @classmethod
     def tearDownClass(cls):
@@ -34,12 +35,13 @@ class testSimulation(unittest.TestCase):
         """
         c = Classifier.loadFromDir(self.storedClassifier)
 
-        #Use mock to replace the long running method createClassifier with one that just returns
+        #Use mock to replace the long running method randomClassifier with one that just returns
         #our xor classifier.
-        with mock.patch.object(Simulation, 'createClassifier', return_value=c) as m:
-            sim = Simulation(workingDir=os.path.join(self.workspace, 'sim'), subjectCount=1,
+        with mock.patch.object(Arena, 'randomClassifier', return_value=c) as m:
+            sim = Arena(workingDir=os.path.join(self.workspace, 'sim'),
                              images=self.xors)
+            sim.spawnSubjects(1)
 
         sim.simulate(numWorkers=1)
-        print(asdf)
+        self.assertAlmostEqual(sim.subjects[0].fitness, 100)
 

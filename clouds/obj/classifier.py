@@ -29,19 +29,22 @@ class Classifier(object):
     _NET_NAME = 'net.xml'
     _camelName = 'classifier.yaml'
 
-    def __init__(self, possible_statuses, imageSize=(128, 128), hiddenLayers=None,
+    def __init__(self, possibleStatuses, imageSize=(128, 128), hiddenLayers=None,
                  trainMethod=trainers.BackpropTrainer,
                  datasetMethod=ClassificationDataSet,
-                 outclass=SoftmaxLayer, convergenceThreshold=10):
+                 outclass=SoftmaxLayer, convergenceThreshold=10,
+                 imageMode='L'):
         hiddenLayers = hiddenLayers or tuple()
 
-        self.possibleStatuses = possible_statuses
-        self.netSpec = (mul(*imageSize), ) + hiddenLayers + (len(possible_statuses), )
+        self.possibleStatuses = possibleStatuses
+        self.netSpec = (mul(*imageSize), ) + hiddenLayers + (len(possibleStatuses), )
         self.imageSize = tuple(float(x) for x in imageSize)
         self.trainMethod = trainMethod
         self.datasetMethod = datasetMethod
         self.net = buildNetwork(*self.netSpec, outclass=outclass)
         self.convergenceThreshold = convergenceThreshold
+        self.imageMode = imageMode
+
         #statistics
         self.avgCertainty = None
         self.trainTime = None
@@ -102,7 +105,7 @@ class Classifier(object):
         start = time.clock()
         result = self.net.activate(self._loadToArray(imagePath))
 
-        print("Result is:", result)
+        #log.debug("Result is:", result)
 
         guess = HealthStatus._value2member_map_[np.argmax(result)]
 
@@ -116,6 +119,7 @@ class Classifier(object):
         try:
             image = PIL.Image.open(imagePath)
         except IOError as e:
+            raise
             #print("Trying to open by converting to png")
             png = os.path.splitext(imagePath)[0] + '.png'
             wand.image.Image(filename=imagePath).convert('PNG').save(filename=png)
@@ -126,15 +130,18 @@ class Classifier(object):
         newSize = tuple(round(x * s) for x, s in zip(image.size, scaleFactor))
         image.thumbnail(newSize)
 
-        #greyscale
-        image = image.convert('L')
+        image = image.convert(self.imageMode)
 
-        # neurolab seems to expect 1d input, so rescale the images in the
-        # input array as linear (the network does't know about shape anyway)
+        # rescale the images in the input array as linear (the network does't know about shape
+        # anyway)
         imageArray = np.array(image)
+
+        #if we're using rgb mode, convert pixels to 32 bit hex colours
+        if self.imageMode.upper() == 'RGB':
+            imageArray = util.rgbToHex(imageArray)
+
         newSize = mul(*imageArray.shape)
         return imageArray.reshape(newSize)
-        #return imageArray
 
 
     def dump(self, dirPath, overwrite):
@@ -171,22 +178,26 @@ serializer = camel.Camel((camel.PYTHON_TYPES, classifierRegistry, healthStatusRe
 
 ####################### DUMPERS #######################
 
-@classifierRegistry.dumper(Classifier, 'Classifier', 1)
+@classifierRegistry.dumper(Classifier, 'Classifier', 2)
 def _dumpClassifier(obj):
     return {
-        'possible_statuses': obj.possibleStatuses,
+        'possibleStatuses': obj.possibleStatuses,
         "imageSize": obj.imageSize,
         'hiddenLayers': obj.netSpec[1:-1],
         'trainMethodName': str(obj.trainMethod.__name__),
         'datasetMethodName': str(obj.datasetMethod.__name__),
         'convergenceThreshold': obj.convergenceThreshold,
+        'imageMode': obj.imageMode,
     }
 
 
 ####################### LOADERS #######################
 
-@classifierRegistry.loader('Classifier', 1)
+@classifierRegistry.loader('Classifier', all)
 def _loadClassifier(data, version):
+    if version == 1:
+        data['possibleStatuses'] = data.pop('possible_statuses')
+
     trainMethod = getattr(trainers.backprop, data.pop('trainMethodName'))
     datasetMethod = getattr(datasets, data.pop('datasetMethodName'))
     data['trainMethod'] = trainMethod

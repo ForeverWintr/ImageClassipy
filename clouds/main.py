@@ -5,11 +5,15 @@ import datetime
 import os
 import multiprocessing
 import sys
+import glob
+import re
 
 import numpy as np
 
-from clouds.obj import genetics
+from clouds.obj import arena
 from clouds.util import farmglue
+from clouds.util import constants
+from clouds import util
 
 #TODO:
 # implement logging
@@ -17,27 +21,81 @@ from clouds.util import farmglue
 # Balance input in training
 
 FARMDIR = r'/Users/tomrutherford/Documents/Hervalense'
+IMAGEDIR = r'/Users/tomrutherford/Documents/Data/CHImages'
 WORKINGDIR = '/Users/tomrutherford/Documents/Data/clouds'
 
 def main(argv):
 
-    np.seterr('raise')
     farmDir = FARMDIR
 
     #logging setup
     log = loggingSetup()
 
+    #np.seterrcall(log)
+    np.seterr('raise', under='warn')
+
+    #convert to png
+    tifToPng(IMAGEDIR)
+
     log.debug("Get images")
     images = farmglue.imagesAndStatuses(farmDir)
+    images.update(imagesFrom(IMAGEDIR, extensions=('png', )))
 
-    sim = genetics.Simulation(WORKINGDIR, 2, images)
+    sim = arena.Arena(WORKINGDIR, images)
+
+    #manual subject creation
+    sim.createSubject(
+        'imgMode_RGB',
+        possibleStatuses=set(images.values()),
+        imageSize=(128, 128),
+        hiddenLayers=None,
+        imageMode='RGB'
+    )
+
+    sim.spawnSubjects(5, ['imgMode_RGB', 'imgMode_I'])
     log.debug("Simulating.")
 
     sim.simulate()
 
     sim.summarize()
     log.debug("Done")
-    pass
+
+
+def padImages(images):
+    """
+    even out the number of images by duplicating minorities.
+    """
+    from collections import Counter
+    #can't do this because images is a dict...
+
+
+def tifToPng(dir_):
+    """
+    Convert all tiffs in the directory to pngs. Recursive.
+    """
+    for t in glob.iglob(os.path.join(dir_, '**', '.*tif'), recursive=True):
+        png = os.path.splitext(t)[0] + '.png'
+        wand.image.Image(filename=t).convert('PNG').save(filename=png)
+        #image = PIL.Image.open(png)
+
+
+def imagesFrom(dir_, extensions=('tif', 'tiff', 'png')):
+    images = {}
+    for p in util.flatten(glob.glob(os.path.join(dir_, '**', '*.{}'.format(e)), recursive=True)
+              for e in extensions):
+        status = getStatusFromName(os.path.basename(p))
+        images[p] = status
+
+    return images
+
+
+def getStatusFromName(name):
+    matcher = re.compile('^({})_'.format('|'.join(constants.HealthStatus._member_names_)))
+    match = matcher.match(name)
+    if not match:
+        return ''
+
+    return constants.HealthStatus._member_map_[match.groups()[0]]
 
 
 def loggingSetup():
