@@ -80,7 +80,7 @@ class Arena(object):
         outClass = genome.OutClass()
 
         kwargs = dict(
-            possible_statuses=possibleStatuses,
+            possibleStatuses=possibleStatuses,
             imageSize=imageSize.parameter,
             hiddenLayers=hiddenLayers.parameter,
             trainMethod=trainMethod.parameter,
@@ -142,8 +142,11 @@ class Arena(object):
         static class methods.
         """
         with Subject.workon(subjectDir) as s:
-            s.train()
+            log.info('{} Loaded. Training'.format(s))
+            #s.train()
+            log.info('{} Training complete'.format(s))
             s.evaluateFitness()
+            log.info('{} Fitness is {}'.format(s, s.fitness))
 
         return s.fitness
 
@@ -301,7 +304,7 @@ class Subject(object):
             self.imagesTrainedOn += len(self.imageDict)
             self.runtimes.append(self.classifier.trainTime)
 
-    def evaluateFitness(self, tests=5):
+    def evaluateFitness(self, tests=100):
         """
         Calculate the performance of our classifier. Test it 'tests' times against a random
         selection of training data.

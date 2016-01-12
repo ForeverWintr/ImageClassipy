@@ -102,7 +102,7 @@ class Classifier(object):
         start = time.clock()
         result = self.net.activate(self._loadToArray(imagePath))
 
-        print("Result is:", result)
+        #log.debug("Result is:", result)
 
         guess = HealthStatus._value2member_map_[np.argmax(result)]
 

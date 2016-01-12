@@ -31,8 +31,8 @@ def main(argv):
     #logging setup
     log = loggingSetup()
 
-    np.seterrcall(log)
-    np.seterr('raise', under='log')
+    #np.seterrcall(log)
+    np.seterr('raise', under='warn')
 
     #convert to png
     tifToPng(IMAGEDIR)
@@ -44,12 +44,12 @@ def main(argv):
     sim = genetics.Arena(WORKINGDIR, images)
 
     #manual subject creation
-    sim.createSubject(
-        'Manual_0',
-        possibleStatuses=set(images.values()),
-        imageSize=(128, 128),
-        hiddenLayers=None,
-    )
+    #sim.createSubject(
+        #'Manual_0',
+        #possibleStatuses=set(images.values()),
+        #imageSize=(128, 128),
+        #hiddenLayers=None,
+    #)
 
     sim.spawnSubjects(1, ['Manual_0'])
     log.debug("Simulating.")
@@ -58,6 +58,14 @@ def main(argv):
 
     sim.summarize()
     log.debug("Done")
+
+
+def padImages(images):
+    """
+    even out the number of images by duplicating minorities.
+    """
+    from collections import Counter
+    #can't do this because images is a dict...
 
 
 def tifToPng(dir_):
