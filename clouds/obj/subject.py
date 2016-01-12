@@ -153,8 +153,9 @@ class Subject(object):
         Calculate the performance of our classifier. Test it 'tests' times against a random
         selection of training data.
         """
+        numTests = min(tests, len(self.statuses))
         images = [x for st in list(self.statuses.keys()) for
-                  x in random.sample(self.statuses[st].keys(), tests)]
+                  x in random.sample(self.statuses[st].keys(), numTests)]
         statuses = [self.imageDict[k] for k in images]
 
         correct = [self.classifier.classify(i)[0] == s for i, s in zip(images, statuses)]

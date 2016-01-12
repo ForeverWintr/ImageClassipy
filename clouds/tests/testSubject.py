@@ -5,7 +5,7 @@ import os
 
 import numpy as np
 
-from clouds.obj.genetics import Subject
+from clouds.obj.subject import Subject
 from clouds.obj.classifier import Classifier
 from clouds.tests.testClassifier import testTrainClassifier
 
@@ -44,4 +44,6 @@ class testSubject(unittest.TestCase):
         #assert that the xor still works
         for img, status in self.xors:
             self.assertEqual(loaded.classifier.classify(img)[0], status)
+
+        print('Done')
 

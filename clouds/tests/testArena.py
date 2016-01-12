@@ -35,7 +35,7 @@ class testArena(unittest.TestCase):
         """
         c = Classifier.loadFromDir(self.storedClassifier)
 
-        #Use mock to replace the long running method createClassifier with one that just returns
+        #Use mock to replace the long running method randomClassifier with one that just returns
         #our xor classifier.
         with mock.patch.object(Arena, 'randomClassifier', return_value=c) as m:
             sim = Arena(workingDir=os.path.join(self.workspace, 'sim'),
