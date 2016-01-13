@@ -36,7 +36,7 @@ log = logging.getLogger('SimulationLogger')
 class Subject(object):
     _camelName = 'subject.yaml'
 
-    def __init__(self, outputDir, classifier_=None, imageDict={}, chunkSize=10, isAlive=True,
+    def __init__(self, outputDir, classifier_=None, chunkSize=10, isAlive=True,
                  fitness=0):
         """
         A container for a single classifier.
@@ -44,7 +44,6 @@ class Subject(object):
         self.name = os.path.basename(outputDir)
         self.outputDir = outputDir
         self.classifier = classifier_
-        self.imageDict = imageDict
 
         #how many images to train on at once
         self.chunkSize = chunkSize
@@ -132,22 +131,22 @@ class Subject(object):
         finally:
             s.save()
 
-    def train(self, maxEpochs=1000):
+    def train(self, imageDict, maxEpochs=1000):
         """
         Train our classifier by feeding it images and statuses.
         """
         try:
-            self.classifier.train(*list(zip(*self.imageDict.items())))
+            self.classifier.train(*list(zip(*imageDict.items())))
             self.errors.append(self.classifier.error)
         except Exception as e:
             log.exception("Subject {} Died".format(self.name))
             self.isAlive = False
             self.runtimes.append(sys.maxsize)
         else:
-            self.imagesTrainedOn += len(self.imageDict)
+            self.imagesTrainedOn += len(imageDict)
             self.runtimes.append(self.classifier.trainTime)
 
-    def evaluateFitness(self, tests=100):
+    def evaluateFitness(self, imageDict, tests=100):
         """
         Calculate the performance of our classifier. Test it 'tests' times against a random
         selection of training data.
@@ -155,7 +154,7 @@ class Subject(object):
         numTests = min(tests, len(self.statuses))
         images = [x for st in list(self.statuses.keys()) for
                   x in random.sample(self.statuses[st].keys(), numTests)]
-        statuses = [self.imageDict[k] for k in images]
+        statuses = [imageDict[k] for k in images]
 
         correct = [self.classifier.classify(i)[0] == s for i, s in zip(images, statuses)]
 

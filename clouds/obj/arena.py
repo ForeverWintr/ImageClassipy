@@ -147,7 +147,6 @@ class Arena(object):
             s = Subject(
                 subjectDir,
                 classifier_=Arena.randomClassifier(set(imageDict.values())),
-                imageDict=imageDict
             )
 
         #still dump even if subject already exists, in case format is out of date
