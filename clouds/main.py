@@ -7,6 +7,7 @@ import multiprocessing
 import sys
 import glob
 import re
+import wand
 
 import numpy as np
 
@@ -23,6 +24,8 @@ from clouds import util
 FARMDIR = r'/Users/tomrutherford/Documents/Hervalense'
 IMAGEDIR = r'/Users/tomrutherford/Documents/Data/CHImages'
 WORKINGDIR = '/Users/tomrutherford/Documents/Data/clouds'
+TESTDIR ='/Users/tomrutherford/Desktop/ClassipyTest'
+
 
 def main(argv):
 
@@ -36,6 +39,7 @@ def main(argv):
 
     #convert to png
     tifToPng(IMAGEDIR)
+    testImages = tifToPng(TESTDIR)
 
     log.debug("Get images")
     images = farmglue.imagesAndStatuses(farmDir)
@@ -44,15 +48,15 @@ def main(argv):
     sim = arena.Arena(WORKINGDIR, images)
 
     #manual subject creation
-    sim.createSubject(
-        'imgMode_RGB',
-        possibleStatuses=set(images.values()),
-        imageSize=(128, 128),
-        hiddenLayers=None,
-        imageMode='RGB'
-    )
+    #sim.createSubject(
+        #'imgMode_RGB',
+        #possibleStatuses=set(images.values()),
+        #imageSize=(128, 128),
+        #hiddenLayers=None,
+        #imageMode='RGB'
+    #)
 
-    sim.spawnSubjects(5, ['imgMode_RGB', 'imgMode_I'])
+    sim.spawnSubjects(2, ['imgMode_RGB', 'imgMode_I'])
     log.debug("Simulating.")
 
     sim.simulate()
@@ -73,11 +77,14 @@ def tifToPng(dir_):
     """
     Convert all tiffs in the directory to pngs. Recursive.
     """
-    for t in glob.iglob(os.path.join(dir_, '**', '.*tif'), recursive=True):
+    pngs = []
+    for t in glob.iglob(os.path.join(dir_, '**', '*tif'), recursive=True):
         png = os.path.splitext(t)[0] + '.png'
-        wand.image.Image(filename=t).convert('PNG').save(filename=png)
+        if not os.path.exists(png):
+            wand.image.Image(filename=t).convert('PNG').save(filename=png)
         #image = PIL.Image.open(png)
-
+        pngs.append(png)
+    return pngs
 
 def imagesFrom(dir_, extensions=('tif', 'tiff', 'png')):
     images = {}
