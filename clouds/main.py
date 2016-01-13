@@ -47,18 +47,18 @@ def main(argv):
 
     testImages = imagesFrom(IMAGEDIR, extensions=('png', ))
 
-    sim = arena.Arena(WORKINGDIR, images, maxWorkers=1)
+    sim = arena.Arena(WORKINGDIR, images, maxWorkers=3)
 
     #manual subject creation
-    #sim.createSubject(
-        #'imgMode_RGB',
-        #possibleStatuses=set(images.values()),
-        #imageSize=(128, 128),
-        #hiddenLayers=None,
-        #imageMode='RGB'
-    #)
+    sim.createSubject(
+        'HiddenLyr',
+        possibleStatuses=set(images.values()),
+        imageSize=(80, 80),
+        hiddenLayers=(500, ),
+        imageMode='RGB'
+    )
 
-    sim.spawnSubjects(2, ['imgMode_RGB', 'imgMode_I'])
+    sim.spawnSubjects(3, ['imgMode_RGB', 'imgMode_I', 'HiddenLyr'])
     log.debug("Simulating.")
 
     sim.simulate()

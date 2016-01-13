@@ -115,7 +115,6 @@ class Arena(object):
         s = Subject(
             subjectDir,
             classifier_=c,
-            imageDict=self.images
         )
         s.save()
         self.subjects.append(s)
