@@ -185,7 +185,7 @@ def _dumpSubject(obj):
 
 @geneticsRegistry.loader('Subject', 1)
 def _loadSubject(data, version):
-    data.pop('imageDict')
+    data.pop('imageDict', None)
     return Subject(**data)
 
 

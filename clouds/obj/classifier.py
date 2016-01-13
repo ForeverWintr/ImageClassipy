@@ -69,7 +69,7 @@ class Classifier(object):
             repr(self.datasetMethod),
         )
 
-    def train(self, images, statuses):
+    def train(self, images, statuses, maxEpochs=None):
         numStatuses = len(self.possibleStatuses)
         ds = self.datasetMethod(mul(*self.imageSize), 1, numStatuses)
         [ds.addSample(self._loadToArray(i), e.value) for i, e in zip(images, statuses)]
@@ -82,7 +82,7 @@ class Classifier(object):
 
         start = time.clock()
         trainErrors, validationErrors = trainer.trainUntilConvergence(
-            convergence_threshold=self.convergenceThreshold)
+            convergence_threshold=self.convergenceThreshold, maxEpochs=maxEpochs)
 
         trainTime = time.clock() - start
 
