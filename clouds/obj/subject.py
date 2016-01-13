@@ -36,7 +36,7 @@ log = logging.getLogger('SimulationLogger')
 class Subject(object):
     _camelName = 'subject.yaml'
 
-    def __init__(self, outputDir, classifier_=None, imageDict={}, chunkSize=10, isAlive=True,
+    def __init__(self, outputDir, classifier_=None, chunkSize=10, isAlive=True,
                  fitness=0):
         """
         A container for a single classifier.
@@ -44,7 +44,6 @@ class Subject(object):
         self.name = os.path.basename(outputDir)
         self.outputDir = outputDir
         self.classifier = classifier_
-        self.imageDict = imageDict
 
         #how many images to train on at once
         self.chunkSize = chunkSize
@@ -58,11 +57,6 @@ class Subject(object):
         #set to false if this classifier is rejected (e.g., it has an error
         #which causes it to crash)
         self.isAlive = isAlive
-
-        #partition by classification type
-        self.statuses = defaultdict(dict)
-        for k, v in imageDict.items():
-            self.statuses[v][k] = v
 
     def __repr__(self):
         return "<Subject {}>".format(self.name)
@@ -132,33 +126,37 @@ class Subject(object):
         finally:
             s.save()
 
-    def train(self, maxEpochs=1000):
+    def train(self, imageDict, maxEpochs=1000):
         """
         Train our classifier by feeding it images and statuses.
         """
-
         try:
-            self.classifier.train(*list(zip(*self.imageDict.items())))
+            self.classifier.train(*list(zip(*imageDict.items())))
             self.errors.append(self.classifier.error)
         except Exception as e:
             log.exception("Subject {} Died".format(self.name))
             self.isAlive = False
             self.runtimes.append(sys.maxsize)
         else:
-            self.imagesTrainedOn += len(self.imageDict)
+            self.imagesTrainedOn += len(imageDict)
             self.runtimes.append(self.classifier.trainTime)
 
-    def evaluateFitness(self, tests=100):
+    def evaluateFitness(self, imageDict, tests=100):
         """
         Calculate the performance of our classifier. Test it 'tests' times against a random
         selection of training data.
         """
-        numTests = min(tests, len(self.statuses))
-        images = [x for st in list(self.statuses.keys()) for
-                  x in random.sample(self.statuses[st].keys(), numTests)]
-        statuses = [self.imageDict[k] for k in images]
+        #partition by classification type
+        statuses = defaultdict(dict)
+        for k, v in imageDict.items():
+            statuses[v][k] = v
 
-        correct = [self.classifier.classify(i)[0] == s for i, s in zip(images, statuses)]
+        numTests = min(tests, len(statuses))
+        images = [x for st in list(statuses.keys()) for
+                  x in random.sample(statuses[st].keys(), numTests)]
+        selectedStatuses = [imageDict[k] for k in images]
+
+        correct = [self.classifier.classify(i)[0] == s for i, s in zip(images, selectedStatuses)]
 
         self.successPercentage = np.mean(correct) * 100
         self.runtimes.append(self.classifier.trainTime)
@@ -176,7 +174,6 @@ serializer = camel.Camel((camel.PYTHON_TYPES, classifier.classifierRegistry,
 @geneticsRegistry.dumper(Subject, 'Subject', 1)
 def _dumpSubject(obj):
     return {
-        'imageDict': obj.imageDict,
         "isAlive": obj.isAlive,
         'chunkSize': obj.chunkSize,
         'outputDir': obj.outputDir,
@@ -188,6 +185,7 @@ def _dumpSubject(obj):
 
 @geneticsRegistry.loader('Subject', 1)
 def _loadSubject(data, version):
+    data.pop('imageDict', None)
     return Subject(**data)
 
 

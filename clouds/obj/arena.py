@@ -85,13 +85,14 @@ class Arena(object):
 
         #If we've only got 1 worker, don't bother with a pool
         if numWorkers <= 1:
-            result = [self._runSubject(s.outputDir) for s in self.subjects]
+            result = [self._runSubject(s.outputDir, self.images) for s in self.subjects]
         else:
             result = multiprocess.mapWithLogging(
                 self._runSubject,
                 [s.outputDir for s in self.subjects],
                 log,
-                numWorkers
+                numWorkers,
+                self.images
             )
 
         #update our local objects' fitness
@@ -118,7 +119,7 @@ class Arena(object):
 
 
     @staticmethod
-    def _runSubject(subjectDir):
+    def _runSubject(subjectDir, imageDict):
         """
         Run a single subject, loaded from the given dir. This method is static, and the subject is
         loaded from a directory in order to work around multiprocessing's inability to pickle non
@@ -126,9 +127,9 @@ class Arena(object):
         """
         with Subject.workon(subjectDir) as s:
             log.info('{} Loaded. Training'.format(s))
-            s.train()
+            s.train(imageDict)
             log.info('{} Training complete'.format(s))
-            s.evaluateFitness()
+            s.evaluateFitness(imageDict)
             log.info('{} Fitness is {}'.format(s, s.fitness))
 
         return s.fitness
@@ -147,7 +148,6 @@ class Arena(object):
             s = Subject(
                 subjectDir,
                 classifier_=Arena.randomClassifier(set(imageDict.values())),
-                imageDict=imageDict
             )
 
         #still dump even if subject already exists, in case format is out of date
