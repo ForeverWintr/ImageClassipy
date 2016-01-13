@@ -38,14 +38,16 @@ def main(argv):
     np.seterr('raise', under='warn')
 
     #convert to png
-    tifToPng(IMAGEDIR)
-    testImages = tifToPng(TESTDIR)
+    tifToPng(IMAGEDIR, removeTif=True)
+    tifToPng(TESTDIR, removeTif=True)
 
     log.debug("Get images")
     images = farmglue.imagesAndStatuses(farmDir)
     images.update(imagesFrom(IMAGEDIR, extensions=('png', )))
 
-    sim = arena.Arena(WORKINGDIR, images)
+    testImages = imagesFrom(IMAGEDIR, extensions=('png', ))
+
+    sim = arena.Arena(WORKINGDIR, images, maxWorkers=1)
 
     #manual subject creation
     #sim.createSubject(
@@ -73,7 +75,7 @@ def padImages(images):
     #can't do this because images is a dict...
 
 
-def tifToPng(dir_):
+def tifToPng(dir_, removeTif=False):
     """
     Convert all tiffs in the directory to pngs. Recursive.
     """
@@ -84,6 +86,8 @@ def tifToPng(dir_):
             wand.image.Image(filename=t).convert('PNG').save(filename=png)
         #image = PIL.Image.open(png)
         pngs.append(png)
+        if removeTif:
+            os.remove(t)
     return pngs
 
 def imagesFrom(dir_, extensions=('tif', 'tiff', 'png')):

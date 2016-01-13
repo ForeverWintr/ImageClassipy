@@ -136,7 +136,6 @@ class Subject(object):
         """
         Train our classifier by feeding it images and statuses.
         """
-
         try:
             self.classifier.train(*list(zip(*self.imageDict.items())))
             self.errors.append(self.classifier.error)
