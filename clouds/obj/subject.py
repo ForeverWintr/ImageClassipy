@@ -174,7 +174,6 @@ serializer = camel.Camel((camel.PYTHON_TYPES, classifier.classifierRegistry,
 @geneticsRegistry.dumper(Subject, 'Subject', 1)
 def _dumpSubject(obj):
     return {
-        'imageDict': obj.imageDict,
         "isAlive": obj.isAlive,
         'chunkSize': obj.chunkSize,
         'outputDir': obj.outputDir,
@@ -186,6 +185,7 @@ def _dumpSubject(obj):
 
 @geneticsRegistry.loader('Subject', 1)
 def _loadSubject(data, version):
+    data.pop('imageDict')
     return Subject(**data)
 
 
