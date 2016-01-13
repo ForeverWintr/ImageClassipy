@@ -75,9 +75,12 @@ class Arena(object):
         return Classifier(**kwargs)
 
 
-    def simulate(self, numWorkers=None):
+    def simulate(self, numWorkers=None, saveEpochs=None, maxEpochs=10000):
         """
-        Train each subject in increments of `epochs` times, and evaluate. Continue until ?
+        Train each subject in increments of `epochs` times, and evaluate. Continue until
+        convergence, death, or maxEpochs is reached.
+
+        Set saveEpochs to save the classifier after training for `saveEpochs` epochs.
         """
         assert self.subjects, "Can't simulate without subjects!"
         if not numWorkers:
@@ -85,14 +88,15 @@ class Arena(object):
 
         #If we've only got 1 worker, don't bother with a pool
         if numWorkers <= 1:
-            result = [self._runSubject(s.outputDir, self.images) for s in self.subjects]
+            result = [self._runSubject(s.outputDir, self.images, saveEpochs) for s in self.subjects]
         else:
             result = multiprocess.mapWithLogging(
                 self._runSubject,
                 [s.outputDir for s in self.subjects],
                 log,
                 numWorkers,
-                self.images
+                self.images,
+                saveEpochs
             )
 
         #update our local objects' fitness

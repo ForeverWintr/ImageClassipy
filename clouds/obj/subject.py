@@ -126,12 +126,12 @@ class Subject(object):
         finally:
             s.save()
 
-    def train(self, imageDict, maxEpochs=1000):
+    def train(self, imageDict, maxEpochs=None):
         """
         Train our classifier by feeding it images and statuses.
         """
         try:
-            self.classifier.train(*list(zip(*imageDict.items())))
+            self.classifier.train(*list(zip(*imageDict.items())), maxEpochs)
             self.errors.append(self.classifier.error)
         except Exception as e:
             log.exception("Subject {} Died".format(self.name))
