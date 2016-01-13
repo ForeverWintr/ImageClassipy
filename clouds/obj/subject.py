@@ -58,11 +58,6 @@ class Subject(object):
         #which causes it to crash)
         self.isAlive = isAlive
 
-        #partition by classification type
-        self.statuses = defaultdict(dict)
-        for k, v in imageDict.items():
-            self.statuses[v][k] = v
-
     def __repr__(self):
         return "<Subject {}>".format(self.name)
 
@@ -151,12 +146,17 @@ class Subject(object):
         Calculate the performance of our classifier. Test it 'tests' times against a random
         selection of training data.
         """
-        numTests = min(tests, len(self.statuses))
-        images = [x for st in list(self.statuses.keys()) for
-                  x in random.sample(self.statuses[st].keys(), numTests)]
-        statuses = [imageDict[k] for k in images]
+        #partition by classification type
+        statuses = defaultdict(dict)
+        for k, v in imageDict.items():
+            statuses[v][k] = v
 
-        correct = [self.classifier.classify(i)[0] == s for i, s in zip(images, statuses)]
+        numTests = min(tests, len(statuses))
+        images = [x for st in list(statuses.keys()) for
+                  x in random.sample(statuses[st].keys(), numTests)]
+        selectedStatuses = [imageDict[k] for k in images]
+
+        correct = [self.classifier.classify(i)[0] == s for i, s in zip(images, selectedStatuses)]
 
         self.successPercentage = np.mean(correct) * 100
         self.runtimes.append(self.classifier.trainTime)
