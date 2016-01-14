@@ -122,7 +122,7 @@ class Arena(object):
 
 
     @staticmethod
-    def _runSubject(subjectDir, imageDict):
+    def _runSubject(subjectDir, imageDict, saveEpochs):
         """
         Run a single subject, loaded from the given dir. This method is static, and the subject is
         loaded from a directory in order to work around multiprocessing's inability to pickle non
@@ -130,7 +130,7 @@ class Arena(object):
         """
         with Subject.workon(subjectDir) as s:
             log.info('{} Loaded. Training'.format(s))
-            s.train(imageDict)
+            s.train(imageDict, saveEpochs)
             log.info('{} Training complete'.format(s))
             s.evaluateFitness(imageDict)
             log.info('{} Fitness is {}'.format(s, s.fitness))

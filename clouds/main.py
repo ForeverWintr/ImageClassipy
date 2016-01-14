@@ -101,7 +101,8 @@ def imagesFrom(dir_, extensions=('tif', 'tiff', 'png')):
 
 
 def getStatusFromName(name):
-    matcher = re.compile('^({})_'.format('|'.join(constants.HealthStatus._member_names_)))
+    validNames = constants.HealthStatus._member_names_ + [constants.HealthStatus.GOOD.name]
+    matcher = re.compile('^({})_'.format('|'.join(validNames)))
     match = matcher.match(name)
     if not match:
         return ''

@@ -6,6 +6,7 @@ healthStatusRegistry = camel.CamelRegistry()
 
 
 class HealthStatus(enum.IntEnum):
+    VALID = 0
     GOOD = 0
     CLOUDY = 1
     CANOLA = 2
