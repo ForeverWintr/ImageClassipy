@@ -49,6 +49,7 @@ class Classifier(object):
         self.avgCertainty = None
         self.trainTime = None
         self.error = None
+        self.epochsTrained = None
 
     def __repr__(self):
         return "<Classifier net {}>".format(self.netSpec)

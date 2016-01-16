@@ -9,6 +9,7 @@ class HealthStatus(enum.IntEnum):
     VALID = 0
     GOOD = 0
     CLOUDY = 1
+    BLOOMING_CANOLA = 2
     CANOLA = 2
     INSUFFICIENT_COVERAGE = 3
     REJECTED_OTHER = 4

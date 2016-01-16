@@ -8,6 +8,7 @@ import logging
 from clouds.util import multiprocess
 from clouds.obj.subject import Subject
 from clouds.obj.classifier import Classifier
+from clouds.obj import genome
 
 log = logging.getLogger('SimulationLogger')
 
@@ -110,6 +111,9 @@ class Arena(object):
         create random subjects.
         """
         subjectDir = os.path.join(self.workingDir, name)
+
+        if 'possibleStatuses' not in kwargs:
+            kwargs['possibleStatuses'] = set(self.images.values())
 
         c = Classifier(**kwargs)
         s = Subject(
