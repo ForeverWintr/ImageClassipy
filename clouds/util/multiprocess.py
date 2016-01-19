@@ -13,7 +13,7 @@ class mapWithLogging(object):
     _KWARGS = None
     _FUNC = None
 
-    def __init__(self, func, iterable, log, workerCount, *args, **kwargs):
+    def __init__(self, func, iterable, log, *args, workerCount=None, **kwargs):
         """
         Map the supplied function to the supplied `iterable` using `workerCount` workers and
         logging to log. Any additional *args and **kwargs will be passed to each `func`. Returns a

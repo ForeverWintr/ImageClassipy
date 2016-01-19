@@ -8,9 +8,9 @@ from clouds.util import multiprocess
 class testMultiprocess(unittest.TestCase):
 
     @staticmethod
-    def sendLog(x, prefix='a'):
+    def sendLog(x, prefix='None', suffix='None'):
         log = logging.getLogger("testMapWithLogging")
-        log.critical("{}{}".format(prefix, x))
+        log.critical("{}{}{}".format(prefix, x, suffix))
 
     def testMapWithLogging(self):
         """
@@ -34,10 +34,11 @@ class testMultiprocess(unittest.TestCase):
         self.assertFalse(stream.read())
 
         #assert that mapWithLogging works as a context manager
-        with multiprocess.mapWithLogging(self.sendLog, inp, log, 4, 'a') as r:
+        with multiprocess.mapWithLogging(self.sendLog, inp, log, 'a',
+                                         workerCount=4, suffix='b') as r:
             r.get()
 
         stream.seek(0)
-        self.assertSequenceEqual(set(stream.read().split()), set(['a{}'.format(x) for x in inp]))
+        self.assertSequenceEqual(set(stream.read().split()), set(['a{}b'.format(x) for x in inp]))
 
 
