@@ -87,9 +87,14 @@ class Arena(object):
         if not numWorkers:
             numWorkers = self._getWorkerCount(len(self.subjects))
 
+        #set up command and result queues
+        commandQ = multiprocessing.Queue()
+        reportQ = multiprocess.Queue()
+
         #If we've only got 1 worker, don't bother with a pool
         if numWorkers <= 1:
-            result = [self._runSubject(s.outputDir, self.images, saveEpochs) for s in self.subjects]
+            result = [self._runSubject(s.outputDir, self.images, saveEpochs, commandQ, reportQ) for
+                      s in self.subjects]
         else:
             result = multiprocess.mapWithLogging(
                 self._runSubject,
@@ -97,7 +102,9 @@ class Arena(object):
                 log,
                 numWorkers,
                 self.images,
-                saveEpochs
+                saveEpochs,
+                commandQ,
+                reportQ
             )
 
         #update our local objects' fitness
@@ -126,7 +133,7 @@ class Arena(object):
 
 
     @staticmethod
-    def _runSubject(subjectDir, imageDict, saveEpochs):
+    def _runSubject(subjectDir, imageDict, saveEpochs, commandQ, resultQ):
         """
         Run a single subject, loaded from the given dir. This method is static, and the subject is
         loaded from a directory in order to work around multiprocessing's inability to pickle non
