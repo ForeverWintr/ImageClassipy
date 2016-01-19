@@ -4,12 +4,26 @@ Multiprocessing utilities
 import multiprocessing
 import logging
 from logging import handlers
+import contextlib
 
-
+@contextlib.contextmanager
 def mapWithLogging(func, iterable, log, workerCount, *args, **kwargs):
     """
     Map the supplied function to the supplied `iterable` using `workerCount` workers and logging to
-    log. Any additional *args and **kwargs will be passed to each `func`.
+    log. Any additional *args and **kwargs will be passed to each `func`. Returns a pool result
+    object. Use like so:
+
+    import logging
+
+    def f(x):
+        log.info("x is: {}".format(x))
+
+    mylog=logging.getLogger('myLog')
+
+    # configure the log object, adding handlers, etc.
+
+    with mapWithLogging(f, [1, 2, 3], log) as mapResult:
+        mapResult.get()
     """
     #set up a queue listener, to write to the worker processes
     logQ = multiprocessing.Queue()
@@ -19,7 +33,7 @@ def mapWithLogging(func, iterable, log, workerCount, *args, **kwargs):
     qListener.start()
 
     try:
-        return pool.map(_wrapper, iterable)
+        yield pool.map_async(_wrapper, iterable)
     finally:
         pool.close()
         pool.join()
@@ -34,6 +48,8 @@ def _wrapper(item):
 _ARGS = None
 _KWARGS = None
 _FUNC = None
+
+
 def _initializer(logQ, loggerName, func, args, kwargs):
     #Set up global variables
     global _ARGS
