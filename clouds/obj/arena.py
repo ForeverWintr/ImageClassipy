@@ -43,9 +43,10 @@ class Arena(object):
 
         if dirs:
             #assigning subjects like this will only work so long as they're picklable
-            self.subjects = multiprocess.mapWithLogging(self._loadSubject, dirs, log,
-                                                        self._getWorkerCount(len(dirs)),
-                                                        self.images)
+            with multiprocess.mapWithLogging(self._loadSubject, dirs, log,
+                                             self.images,
+                                             workerCount=self._getWorkerCount(len(dirs))) as r:
+                self.subjects = r.get()
 
     @staticmethod
     def randomClassifier(possibleStatuses):
@@ -89,23 +90,18 @@ class Arena(object):
 
         #set up command and result queues
         commandQ = multiprocessing.Queue()
-        reportQ = multiprocess.Queue()
+        reportQ = multiprocessing.Queue()
 
         #If we've only got 1 worker, don't bother with a pool
-        if numWorkers <= 1:
+        if numWorkers == 1:
             result = [self._runSubject(s.outputDir, self.images, saveEpochs, commandQ, reportQ) for
                       s in self.subjects]
         else:
-            result = multiprocess.mapWithLogging(
-                self._runSubject,
-                [s.outputDir for s in self.subjects],
-                log,
-                numWorkers,
-                self.images,
-                saveEpochs,
-                commandQ,
-                reportQ
-            )
+            with multiprocess.mapWithLogging(self._runSubject,
+                                             [s.outputDir for s in self.subjects], log,
+                                             numWorkers, self.images, saveEpochs, commandQ,
+                                             reportQ) as r:
+                result = r.get()
 
         #update our local objects' fitness
         for s, r in zip(self.subjects, result):
@@ -141,7 +137,7 @@ class Arena(object):
         """
         with Subject.workon(subjectDir) as s:
             log.info('{} Loaded. Training'.format(s))
-            s.train(imageDict, saveEpochs)
+            s.train(imageDict, saveEpochs, commandQ, resultQ)
             log.info('{} Training complete'.format(s))
             s.evaluateFitness(imageDict)
             log.info('{} Fitness is {}'.format(s, s.fitness))

@@ -70,7 +70,7 @@ class Classifier(object):
             repr(self.datasetMethod),
         )
 
-    def train(self, images, statuses, maxEpochs=None):
+    def train(self, images, statuses, reportInterval=None, commandQ=None, resultQ=None):
         numStatuses = len(self.possibleStatuses)
         ds = self.datasetMethod(mul(*self.imageSize), 1, numStatuses)
         [ds.addSample(self._loadToArray(i), e.value) for i, e in zip(images, statuses)]
@@ -82,8 +82,12 @@ class Classifier(object):
         trainer = self.trainMethod(self.net, dataset=ds)
 
         start = time.clock()
-        trainErrors, validationErrors = trainer.trainUntilConvergence(
-            convergence_threshold=self.convergenceThreshold, maxEpochs=maxEpochs)
+        while True:
+            trainErrors, validationErrors = trainer.trainUntilConvergence(
+                convergence_threshold=self.convergenceThreshold, maxEpochs=reportInterval)
+
+            if self._trainingBreakCondition(validationErrors, reportInterval):
+                break
 
         trainTime = time.clock() - start
 
@@ -98,6 +102,12 @@ class Classifier(object):
         self.error = validationErrors[-1]
         return trainErrors, validationErrors
 
+    def _trainingBreakCondition(self, errorList, maxEpochs):
+        """
+        Return true if we consider training finished. Currently this just checks to see if the
+        number of times we trained was less than the number of epochs we requested.
+        """
+        return not maxEpochs or (len(errorList) - maxEpochs) < 2
 
     def classify(self, imagePath):
         """

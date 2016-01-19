@@ -25,3 +25,6 @@ def _dumpHealthStatus(obj):
 @healthStatusRegistry.loader('HealthStatus', 1)
 def _loadHealthStatus(data, version):
     return HealthStatus._member_map_[data['status']]
+
+class Command(enum.IntEnum):
+    STOP = 0
