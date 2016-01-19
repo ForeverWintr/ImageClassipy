@@ -5,7 +5,7 @@ import multiprocessing
 
 from clouds.util import multiprocess
 
-class testSubject(unittest.TestCase):
+class testMultiprocess(unittest.TestCase):
 
     @staticmethod
     def sendLog(x, prefix='a'):
@@ -33,9 +33,11 @@ class testSubject(unittest.TestCase):
         stream.seek(0)
         self.assertFalse(stream.read())
 
-        #assert that mapWithLogging works
+        #assert that mapWithLogging works as a context manager
         with multiprocess.mapWithLogging(self.sendLog, inp, log, 4, 'a') as r:
             r.get()
 
         stream.seek(0)
         self.assertSequenceEqual(set(stream.read().split()), set(['a{}'.format(x) for x in inp]))
+
+
