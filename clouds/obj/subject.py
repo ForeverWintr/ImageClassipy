@@ -126,7 +126,7 @@ class Subject(object):
         finally:
             s.save()
 
-    def train(self, imageDict, commandQ, resultQ, maxEpochs=None):
+    def train(self, imageDict,  maxEpochs=None, commandQ=None, resultQ=None):
         """
         Train our classifier by feeding it images and statuses.
         """

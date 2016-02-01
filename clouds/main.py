@@ -57,10 +57,10 @@ def main(argv):
         #imageMode='RGB'
     #)
 
-    sim.spawnSubjects(4, subjectNames=['imgMode_RGB', 'imgMode_I', 'HiddenLyr', 'BigHidden'])
+    sim.spawnSubjects(1, subjectNames=['imgMode_RGB', 'imgMode_I', 'HiddenLyr', 'BigHidden'])
     log.debug("Simulating.")
 
-    sim.simulate()
+    sim.simulate(reportEpochs=20)
 
     sim.summarize()
     log.debug("Done")

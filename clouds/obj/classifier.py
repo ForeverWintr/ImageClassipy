@@ -73,7 +73,10 @@ class Classifier(object):
     def train(self, images, statuses, reportInterval=None, commandQ=None, resultQ=None):
         numStatuses = len(self.possibleStatuses)
         ds = self.datasetMethod(mul(*self.imageSize), 1, numStatuses)
+
+        log.debug("{}: Getting images".format(self))
         [ds.addSample(self._loadToArray(i), e.value) for i, e in zip(images, statuses)]
+        log.debug("{} done".format(self))
 
         #convert to one output per class. Apparently this is a better format?
         # http://pybrain.org/docs/tutorial/fnn.html
@@ -86,7 +89,9 @@ class Classifier(object):
             trainErrors, validationErrors = trainer.trainUntilConvergence(
                 convergence_threshold=self.convergenceThreshold, maxEpochs=reportInterval)
 
-            if self._trainingBreakCondition(validationErrors, reportInterval):
+
+
+            if self._trainingBreakCondition(trainer.trainingErrors, reportInterval):
                 break
 
         trainTime = time.clock() - start

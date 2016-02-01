@@ -23,25 +23,37 @@ class testArena(unittest.TestCase):
         shutil.copytree(os.path.join(TESTDATA, 'xorClassifier'), cls.storedClassifier)
 
         cls.xors = {x[0]: x[1] for x in util.createXors(cls.workspace)}
+        cls.sim = None
 
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.workspace)
 
-
-    def testRunSubject(self):
-        """
-        Test a run of the xor problem.
-        """
+    def setUp(self):
         c = Classifier.loadFromDir(self.storedClassifier)
 
         #Use mock to replace the long running method randomClassifier with one that just returns
         #our xor classifier.
         with mock.patch.object(Arena, 'randomClassifier', return_value=c) as m:
-            sim = Arena(workingDir=os.path.join(self.workspace, 'sim'),
+            self.sim = Arena(workingDir=os.path.join(self.workspace, 'sim'),
                              images=self.xors)
-            sim.spawnSubjects(1)
+            self.sim.spawnSubjects(1)
 
-        sim.simulate(numWorkers=1)
-        self.assertAlmostEqual(sim.subjects[0].fitness, 100)
+    def tearDown(self):
+        shutil.rmtree(self.sim.workingDir)
+        self.sim = None
 
+    def testSimulate(self):
+        """
+        Test a run of the xor problem.
+        """
+        self.sim.simulate(numWorkers=1, reportEpochs=10)
+        self.assertAlmostEqual(self.sim.subjects[0].fitness, 100)
+
+    def testAbort(self):
+        """
+        Assert that a simulation can be aborted, and its subjects will be saved.
+        """
+        #mock pybrain's trainuntilconvergence to sleep a while
+        self.sim.simulate(numWorkers=1)
+        self.assertAlmostEqual(self.sim.subjects[0].fitness, 100)

@@ -1,6 +1,9 @@
 import os
 import errno
 from itertools import zip_longest, chain
+import signal
+import sys
+
 import numpy as np
 
 
@@ -47,3 +50,62 @@ def rgbToHex(array):
     """
     array = np.asarray(array, dtype='uint32')
     return ((array[:, :, 0]<<16) + (array[:, :, 1]<<8) + array[:, :, 2])
+
+
+def debuggingEnabled():
+    """
+    Return true if we're in debug mode with wing.
+    """
+    if sys.gettrace():
+        return True
+    if sys.executable.endswith('wingdb.exe'):
+        return True
+    return False
+
+
+class GracefulInterruptHandler(object):
+
+    def __init__(self, sig=signal.SIGINT):
+        """
+        Adapted from: https://gist.github.com/nonZero/2907502
+        """
+        self.sig = sig
+
+    @staticmethod
+    def handler(signum, frame):
+        self.release()
+        self.interrupted = True
+
+    def __enter__(self):
+        self.interrupted = False
+        self.released = False
+        self.original_handler = signal.getsignal(self.sig)
+
+        signal.signal(self.sig, self.handler)
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.release()
+
+    def release(self):
+        if self.released:
+            return False
+
+        signal.signal(self.sig, self.original_handler)
+        self.released = True
+        return True
+
+
+class SendStopOnInterrupt(GracefulInterruptHandler):
+    def __init__(self, queue, message, sig=signal.SIGINT):
+        """
+        Send the specified `message` to the specifed `queue` if interupted with `sig` signal.
+        """
+        super().__init__(sig)
+        self.queue = queue
+        self.message = message
+
+    def handler(signum, frame):
+        self.queue.put(self.message)
+        super().handler(signum, frame)
+
