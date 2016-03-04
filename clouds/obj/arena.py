@@ -23,8 +23,6 @@ DEBUG = debuggingEnabled()
 class Arena(object):
 
     def __init__(self, workingDir, images={}, maxWorkers=multiprocessing.cpu_count()):
-        """
-        """
         self.subjects = []
         self.images = images
         self.workingDir = workingDir

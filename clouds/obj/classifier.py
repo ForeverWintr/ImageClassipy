@@ -6,6 +6,7 @@ import time
 from operator import mul, itemgetter
 import logging
 from collections import namedtuple
+import queue
 
 import PIL.Image
 import wand.image
@@ -18,7 +19,7 @@ from pybrain.structure.modules import SoftmaxLayer
 import numpy as np
 import camel
 
-from clouds.util.constants import HealthStatus, healthStatusRegistry
+from clouds.util.constants import HealthStatus, healthStatusRegistry, Command
 from clouds import util
 
 
@@ -49,7 +50,7 @@ class Classifier(object):
         self.avgCertainty = None
         self.trainTime = None
         self.error = None
-        self.epochsTrained = None
+        self.epochsTrained = 0
 
     def __repr__(self):
         return "<Classifier net {}>".format(self.netSpec)
@@ -85,13 +86,25 @@ class Classifier(object):
         trainer = self.trainMethod(self.net, dataset=ds)
 
         start = time.clock()
+        continueEpochs = 10
+
+        hasConverged = False
         while True:
             trainErrors, validationErrors = trainer.trainUntilConvergence(
-                convergence_threshold=self.convergenceThreshold, maxEpochs=reportInterval)
+                convergence_threshold=self.convergenceThreshold, maxEpochs=reportInterval,
+                continueEpochs=continueEpochs,
+            )
+            self.epochsTrained += min(len(trainErrors), reportInterval)
 
+            try:
+                command = commandQ.get(False)
+                if command is Command.STOP:
+                    break
+            except queue.Empty:
+                pass
 
-
-            if self._trainingBreakCondition(trainer.trainingErrors, reportInterval):
+            if self._trainerHasConverged(trainer, continueEpochs):
+                hasConverged = True
                 break
 
         trainTime = time.clock() - start
@@ -105,14 +118,25 @@ class Classifier(object):
 
         self.trainTime = float(trainTime) / iterations
         self.error = validationErrors[-1]
-        return trainErrors, validationErrors
+        return trainErrors, validationErrors, hasConverged
 
-    def _trainingBreakCondition(self, errorList, maxEpochs):
+    def _trainerHasConverged(self, trainer, continueEpochs):
         """
-        Return true if we consider training finished. Currently this just checks to see if the
-        number of times we trained was less than the number of epochs we requested.
+        This check is performed internally by pybrain, but the results are not accessible outside
+        of the trainer. I've reimplemented it here.
         """
-        return not maxEpochs or (len(errorList) - maxEpochs) < 2
+        # have the validation errors started going up again?
+        # compare the average of the last few to the previous few
+        old = trainer.x[-continueEpochs * 2:-continueEpochs]
+        new = self.validationErrors[-continueEpochs:]
+        if min(new) > max(old):
+            self.module.params[:] = bestweights
+            return 'local_minimum'
+        lastnew = round(new[-1], convergence_threshold)
+        if sum(round(y, convergence_threshold) - lastnew for y in new) == 0:
+            self.module.params[:] = bestweights
+            return 'converged'
+        return False
 
     def classify(self, imagePath):
         """
