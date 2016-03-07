@@ -94,17 +94,13 @@ class Classifier(object):
                 convergence_threshold=self.convergenceThreshold, maxEpochs=reportInterval,
                 continueEpochs=continueEpochs,
             )
-            self.epochsTrained += min(len(trainErrors), reportInterval)
+            self.epochsTrained += min(len(trainErrors), reportInterval or 0)
 
-            try:
-                command = commandQ.get(False)
-                if command is Command.STOP:
-                    break
-            except queue.Empty:
-                pass
-
-            if self._trainerHasConverged(trainer, continueEpochs):
+            if self._trainerHasConverged(trainer, continueEpochs, self.convergenceThreshold):
                 hasConverged = True
+                break
+
+            if commandQ and self._stopRecieved(commandQ):
                 break
 
         trainTime = time.clock() - start
@@ -120,23 +116,33 @@ class Classifier(object):
         self.error = validationErrors[-1]
         return trainErrors, validationErrors, hasConverged
 
-    def _trainerHasConverged(self, trainer, continueEpochs):
+    @staticmethod
+    def _trainerHasConverged(trainer, continueEpochs, convergenceThreshold):
         """
         This check is performed internally by pybrain, but the results are not accessible outside
         of the trainer. I've reimplemented it here.
         """
         # have the validation errors started going up again?
         # compare the average of the last few to the previous few
-        old = trainer.x[-continueEpochs * 2:-continueEpochs]
-        new = self.validationErrors[-continueEpochs:]
-        if min(new) > max(old):
-            self.module.params[:] = bestweights
+        old = trainer.validationErrors[-continueEpochs * 2:-continueEpochs]
+        new = trainer.validationErrors[-continueEpochs:]
+        if old and new and min(new) > max(old):
             return 'local_minimum'
-        lastnew = round(new[-1], convergence_threshold)
-        if sum(round(y, convergence_threshold) - lastnew for y in new) == 0:
-            self.module.params[:] = bestweights
+        lastnew = round(new[-1], convergenceThreshold)
+        if sum(round(y, convergenceThreshold) - lastnew for y in new) == 0:
             return 'converged'
         return False
+
+    @staticmethod
+    def _stopRecieved(commandQ):
+        try:
+            command = commandQ.get(False)
+            if command is Command.STOP:
+                return True
+        except queue.Empty:
+            pass
+        return False
+
 
     def classify(self, imagePath):
         """
@@ -228,6 +234,7 @@ def _dumpClassifier(obj):
         'datasetMethodName': str(obj.datasetMethod.__name__),
         'convergenceThreshold': obj.convergenceThreshold,
         'imageMode': obj.imageMode,
+        'epochsTrained': obj.epochsTrained,
     }
 
 
@@ -242,5 +249,7 @@ def _loadClassifier(data, version):
     datasetMethod = getattr(datasets, data.pop('datasetMethodName'))
     data['trainMethod'] = trainMethod
     data['datasetMethod'] = datasetMethod
-
-    return Classifier(**data)
+    epochsTrained = data.pop('epochsTrained', 0)
+    c = Classifier(**data)
+    c.epochsTrained = epochsTrained
+    return c
