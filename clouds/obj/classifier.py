@@ -138,9 +138,11 @@ class Classifier(object):
         try:
             command = commandQ.get(False)
             if command is Command.STOP:
+                print('stop')
                 return True
         except queue.Empty:
             pass
+        print("No stop")
         return False
 
 

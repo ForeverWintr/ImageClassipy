@@ -6,6 +6,7 @@ import os
 import logging
 import signal
 import sys
+from pprint import pformat
 
 from clouds.util import multiprocess
 from clouds.util import SendStopOnInterrupt

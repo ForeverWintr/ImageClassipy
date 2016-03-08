@@ -3,6 +3,10 @@ import shutil
 import tempfile
 import os
 import mock
+import json
+import subprocess
+import sys
+import signal
 
 import numpy as np
 
@@ -10,6 +14,7 @@ from clouds.obj.subject import Subject
 from clouds.obj.arena import Arena
 from clouds.obj.classifier import Classifier
 from clouds.tests import util
+from clouds.tests.util import abortableSim
 
 TESTDATA = './data'
 
@@ -55,5 +60,15 @@ class testArena(unittest.TestCase):
         Assert that a simulation can be aborted, and its subjects will be saved.
         """
         #mock pybrain's trainuntilconvergence to sleep a while
-        self.sim.simulate(numWorkers=1)
-        self.assertAlmostEqual(self.sim.subjects[0].fitness, 100)
+        jsonImages = json.dumps(self.xors)
+
+        print(sys.executable)
+        with subprocess.Popen([sys.executable, abortableSim.__file__, self.sim.workingDir, '1',
+                               jsonImages]) as proc:
+            import time
+            time.sleep(10)
+            proc.send_signal(signal.SIGINT)
+            print("Sent Signal")
+            time.sleep(10)
+            self.assertNotEqual(proc.poll(), None)
+            pass

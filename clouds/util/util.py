@@ -71,8 +71,7 @@ class GracefulInterruptHandler(object):
         """
         self.sig = sig
 
-    @staticmethod
-    def handler(signum, frame):
+    def handler(self, signum, frame):
         self.release()
         self.interrupted = True
 
@@ -105,7 +104,8 @@ class SendStopOnInterrupt(GracefulInterruptHandler):
         self.queue = queue
         self.message = message
 
-    def handler(signum, frame):
+    def handler(self, signum, frame):
+        print("RECIEVED SIGNAL")
         self.queue.put(self.message)
         super().handler(signum, frame)
 
