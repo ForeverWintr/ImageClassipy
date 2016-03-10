@@ -94,7 +94,7 @@ class Classifier(object):
                 convergence_threshold=self.convergenceThreshold, maxEpochs=reportInterval,
                 continueEpochs=continueEpochs,
             )
-            self.epochsTrained += min(len(trainErrors), reportInterval or 0)
+            self.epochsTrained += len(trainErrors)
 
             if self._trainerHasConverged(trainer, continueEpochs, self.convergenceThreshold):
                 hasConverged = True

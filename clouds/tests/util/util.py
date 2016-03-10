@@ -28,3 +28,24 @@ def createXors(tgt):
             image.save(path)
             xorImages.append((path, expected))
     return xorImages
+
+
+class MockStream(object):
+    def __init__(self, inputQueue):
+        """
+        A class used as a replacement for stream objects. As data are recieved on the inputQueue,
+        make them available to `readline`.
+        """
+        self.q = inputQueue
+
+    def read(self):
+        return [l for l in self.readline()]
+
+    def readline(self):
+        """
+        Block until an item appears in the queue.
+        """
+        return self.q.get()
+
+    def close(self):
+        pass

@@ -7,6 +7,7 @@ import json
 import subprocess
 import sys
 import signal
+from queue import Queue
 
 import numpy as np
 
@@ -15,6 +16,7 @@ from clouds.obj.arena import Arena
 from clouds.obj.classifier import Classifier
 from clouds.tests import util
 from clouds.tests.util import abortableSim
+from clouds.util import enqueue
 
 TESTDATA = './data'
 
@@ -62,13 +64,31 @@ class testArena(unittest.TestCase):
         #mock pybrain's trainuntilconvergence to sleep a while
         jsonImages = json.dumps(self.xors)
 
-        print(sys.executable)
+        #assert that classifier has no trained epochs initially
+        c = Classifier.loadFromDir(os.path.join(self.workspace, 'sim', 'Subject_0', 'classifier'))
+        self.assertEqual(c.epochsTrained, 0)
+
         with subprocess.Popen([sys.executable, abortableSim.__file__, self.sim.workingDir, '1',
-                               jsonImages]) as proc:
-            import time
-            time.sleep(10)
-            proc.send_signal(signal.SIGINT)
-            print("Sent Signal")
-            time.sleep(10)
-            self.assertNotEqual(proc.poll(), None)
-            pass
+                               jsonImages], stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE) as proc:
+            simOut = Queue()
+            with enqueue(proc.stdout, simOut):
+                #wait for the first print statement
+                self.assertIn("Waiting for interrupt signal", simOut.get().decode())
+
+                #send abort
+                proc.send_signal(signal.SIGINT)
+
+                #Give the process some time to exit
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.fail("Simulation failed to exit within 5 seconds")
+
+            #assert that the exit code was zero
+            self.assertEqual(proc.poll(), 0, "Simulation failed to exit cleanly")
+
+        #check that the classifier was modified
+        c = Classifier.loadFromDir(os.path.join(self.workspace, 'sim', 'Subject_0', 'classifier'))
+        self.assertEqual(c.epochsTrained, 1)
+        pass

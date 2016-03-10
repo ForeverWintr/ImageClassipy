@@ -3,6 +3,8 @@ import errno
 from itertools import zip_longest, chain
 import signal
 import sys
+import contextlib
+from threading import Thread
 
 import numpy as np
 
@@ -108,4 +110,29 @@ class SendStopOnInterrupt(GracefulInterruptHandler):
         print("RECIEVED SIGNAL")
         self.queue.put(self.message)
         super().handler(signum, frame)
+
+
+class enqueue(object):
+    def __init__(self, stream, queue):
+        """
+        Monitor `stream` from a separate thread, and put items read onto `queue`. This allows you
+        to perform non-blocking reads on `queue`.
+
+        Based on http://stackoverflow.com/a/4896288/1286571
+        """
+        self.stream = stream
+        self.queue = queue
+        self.thread = Thread(target=self._enqueue)
+        self.thread.daemon = True
+
+    def _enqueue(self):
+        for line in iter(self.stream.readline, b''):
+            self.queue.put(line)
+
+    def __enter__(self):
+        self.thread.start()
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.stream.close()
 
