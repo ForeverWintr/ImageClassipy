@@ -6,6 +6,7 @@ import time
 from operator import mul, itemgetter
 import logging
 from collections import namedtuple
+import queue
 
 import PIL.Image
 import wand.image
@@ -18,7 +19,7 @@ from pybrain.structure.modules import SoftmaxLayer
 import numpy as np
 import camel
 
-from clouds.util.constants import HealthStatus, healthStatusRegistry
+from clouds.util.constants import HealthStatus, healthStatusRegistry, Command
 from clouds import util
 
 
@@ -49,6 +50,7 @@ class Classifier(object):
         self.avgCertainty = None
         self.trainTime = None
         self.error = None
+        self.epochsTrained = 0
 
     def __repr__(self):
         return "<Classifier net {}>".format(self.netSpec)
@@ -69,10 +71,13 @@ class Classifier(object):
             repr(self.datasetMethod),
         )
 
-    def train(self, images, statuses, maxEpochs=None):
+    def train(self, images, statuses, reportInterval=None, commandQ=None, resultQ=None):
         numStatuses = len(self.possibleStatuses)
         ds = self.datasetMethod(mul(*self.imageSize), 1, numStatuses)
+
+        log.debug("{}: Getting images".format(self))
         [ds.addSample(self._loadToArray(i), e.value) for i, e in zip(images, statuses)]
+        log.debug("{} done".format(self))
 
         #convert to one output per class. Apparently this is a better format?
         # http://pybrain.org/docs/tutorial/fnn.html
@@ -81,8 +86,22 @@ class Classifier(object):
         trainer = self.trainMethod(self.net, dataset=ds)
 
         start = time.clock()
-        trainErrors, validationErrors = trainer.trainUntilConvergence(
-            convergence_threshold=self.convergenceThreshold, maxEpochs=maxEpochs)
+        continueEpochs = 10
+
+        hasConverged = False
+        while True:
+            trainErrors, validationErrors = trainer.trainUntilConvergence(
+                convergence_threshold=self.convergenceThreshold, maxEpochs=reportInterval,
+                continueEpochs=continueEpochs,
+            )
+            self.epochsTrained += len(trainErrors)
+
+            if self._trainerHasConverged(trainer, continueEpochs, self.convergenceThreshold):
+                hasConverged = True
+                break
+
+            if commandQ and self._stopRecieved(commandQ):
+                break
 
         trainTime = time.clock() - start
 
@@ -95,7 +114,36 @@ class Classifier(object):
 
         self.trainTime = float(trainTime) / iterations
         self.error = validationErrors[-1]
-        return trainErrors, validationErrors
+        return trainErrors, validationErrors, hasConverged
+
+    @staticmethod
+    def _trainerHasConverged(trainer, continueEpochs, convergenceThreshold):
+        """
+        This check is performed internally by pybrain, but the results are not accessible outside
+        of the trainer. I've reimplemented it here.
+        """
+        # have the validation errors started going up again?
+        # compare the average of the last few to the previous few
+        old = trainer.validationErrors[-continueEpochs * 2:-continueEpochs]
+        new = trainer.validationErrors[-continueEpochs:]
+        if old and new and min(new) > max(old):
+            return 'local_minimum'
+        lastnew = round(new[-1], convergenceThreshold)
+        if sum(round(y, convergenceThreshold) - lastnew for y in new) == 0:
+            return 'converged'
+        return False
+
+    @staticmethod
+    def _stopRecieved(commandQ):
+        try:
+            command = commandQ.get(False)
+            if command is Command.STOP:
+                print('stop')
+                return True
+        except queue.Empty:
+            pass
+        print("No stop")
+        return False
 
 
     def classify(self, imagePath):
@@ -188,6 +236,7 @@ def _dumpClassifier(obj):
         'datasetMethodName': str(obj.datasetMethod.__name__),
         'convergenceThreshold': obj.convergenceThreshold,
         'imageMode': obj.imageMode,
+        'epochsTrained': obj.epochsTrained,
     }
 
 
@@ -202,5 +251,7 @@ def _loadClassifier(data, version):
     datasetMethod = getattr(datasets, data.pop('datasetMethodName'))
     data['trainMethod'] = trainMethod
     data['datasetMethod'] = datasetMethod
-
-    return Classifier(**data)
+    epochsTrained = data.pop('epochsTrained', 0)
+    c = Classifier(**data)
+    c.epochsTrained = epochsTrained
+    return c

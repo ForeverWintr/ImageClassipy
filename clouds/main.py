@@ -47,21 +47,20 @@ def main(argv):
 
     testImages = imagesFrom(IMAGEDIR, extensions=('png', ))
 
-    sim = arena.Arena(WORKINGDIR, images, maxWorkers=1)
+    sim = arena.Arena(WORKINGDIR, images, maxWorkers=7)
 
     #manual subject creation
     #sim.createSubject(
-        #'imgMode_RGB',
-        #possibleStatuses=set(images.values()),
-        #imageSize=(128, 128),
-        #hiddenLayers=None,
+        #'BigHidden',
+        #imageSize=(24, 24),
+        #hiddenLayers=(1000, ),
         #imageMode='RGB'
     #)
 
-    sim.spawnSubjects(2, ['imgMode_RGB', 'imgMode_I'])
+    sim.spawnSubjects(1, subjectNames=['imgMode_RGB', 'imgMode_I', 'HiddenLyr', 'BigHidden'])
     log.debug("Simulating.")
 
-    sim.simulate()
+    sim.simulate(reportEpochs=20)
 
     sim.summarize()
     log.debug("Done")
@@ -101,10 +100,12 @@ def imagesFrom(dir_, extensions=('tif', 'tiff', 'png')):
 
 
 def getStatusFromName(name):
-    matcher = re.compile('^({})_'.format('|'.join(constants.HealthStatus._member_names_)))
+    #GOOD is an alias for VALID
+    validNames = constants.HealthStatus._member_names_ + ['GOOD', 'CANOLA']
+    matcher = re.compile('^({})_'.format('|'.join(validNames)))
     match = matcher.match(name)
     if not match:
-        return ''
+        raise ValueError("Unrecognized status: {}".format(name))
 
     return constants.HealthStatus._member_map_[match.groups()[0]]
 

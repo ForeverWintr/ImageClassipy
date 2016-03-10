@@ -1,1 +1,1 @@
-from .utils import createXors
+from .util import createXors

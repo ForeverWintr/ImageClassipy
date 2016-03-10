@@ -3,6 +3,7 @@ import unittest
 import sys
 import tempfile
 import shutil
+import queue
 
 import mock
 import numpy as np
@@ -10,7 +11,7 @@ import PIL
 from pybrain.tools.customxml import NetworkReader
 import camel
 
-from clouds.util.constants import HealthStatus
+from clouds.util.constants import HealthStatus, Command
 from clouds.obj import classifier
 from clouds.tests import util
 
@@ -75,6 +76,23 @@ class testTrainClassifier(unittest.TestCase):
             self.assertEqual(c.classify(image)[0], expected)
 
         print('done')
+
+
+    def testAbort(self):
+        """
+        Assert that we stop and save if STOP is recieved in the command queue.
+        """
+        c = classifier.Classifier(
+            set(list(zip(*self.xorImages))[1]), imageSize=(2, 2), hiddenLayers=(8, ),
+            convergenceThreshold=4
+        )
+
+        commandQ = queue.Queue()
+        commandQ.put(Command.STOP)
+
+        c.train(*list(zip(*self.xorImages)), reportInterval=1, commandQ=commandQ)
+
+        self.assertEqual(c.epochsTrained, 1)
 
 
     def testTrain(self):
