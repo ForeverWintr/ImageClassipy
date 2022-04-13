@@ -22,7 +22,7 @@ path.py==8.1.2
 pbr==1.8.1
 pexpect==4.0.1
 pickleshare==0.5
-Pillow==3.0.0
+Pillow==9.0.1
 plotly==1.9.3
 ptyprocess==0.5
 PyBrain==0.3.3
